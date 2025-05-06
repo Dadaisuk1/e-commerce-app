@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useCart } from "@/app/hooks/useCart";
 import { useAuth } from "@/app/hooks/useAuth";
 import { useRouter } from "next/navigation";
-import { CartItem } from "@/app/components/CartItem"; // Import the updated CartItem component
+import { CartItem } from "@/app/components/CartItem";
 import { formatCurrency } from "@/app/lib/utils";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
@@ -34,11 +34,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { CheckCircle, XCircle } from "lucide-react"; // Icons for dialog
 
 export default function CartPage() {
   const {
     cartItems,
-    savedItems, // Get savedItems from context
+    savedItems,
     subtotal,
     discountAmount,
     total,
@@ -51,8 +52,33 @@ export default function CartPage() {
   const [couponInput, setCouponInput] = useState("");
   const [showLoginAlert, setShowLoginAlert] = useState(false);
 
+  const [showDiscountAlert, setShowDiscountAlert] = useState(false);
+  const [discountAlertInfo, setDiscountAlertInfo] = useState({
+    title: "",
+    message: "",
+    success: false,
+  });
+
+  // --- Updated handleApplyCoupon ---
   const handleApplyCoupon = () => {
-    applyDiscount(couponInput);
+    // Simulate checking the coupon (replace with actual logic if needed)
+    if (couponInput.toUpperCase() === "SAVE10") {
+      applyDiscount(couponInput); // Call the context function which sets the discountCode state
+      setDiscountAlertInfo({
+        title: "Discount Applied!",
+        message: `The discount code "${couponInput.toUpperCase()}" has been successfully applied.`,
+        success: true,
+      });
+    } else {
+      applyDiscount(""); // Ensure context resets discount if code is invalid
+      setDiscountAlertInfo({
+        title: "Invalid Code",
+        message: `The discount code "${couponInput}" is not valid. Please try again.`,
+        success: false,
+      });
+    }
+    setShowDiscountAlert(true); // Show the dialog
+    setCouponInput(""); // Clear input after attempt
   };
 
   const handleClearCart = () => {
@@ -74,7 +100,6 @@ export default function CartPage() {
   };
 
   if (cartItems.length === 0 && savedItems.length === 0) {
-    // Check both lists for empty state
     return (
       <div className="container mx-auto px-4 py-16 text-center">
         <Card className="max-w-lg mx-auto">
@@ -99,7 +124,7 @@ export default function CartPage() {
   return (
     <>
       {" "}
-      {/* Use Fragment to allow AlertDialog sibling */}
+      {/* Use Fragment to allow multiple AlertDialog siblings */}
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mb-6">Shopping Cart</h1>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -108,11 +133,9 @@ export default function CartPage() {
             {/* Active Cart Items Section */}
             {cartItems.length > 0 && (
               <div>
-                {/* Optional: Add a heading like "Items in Cart" */}
-                {/* <h2 className="text-xl font-semibold mb-3">Items in Cart</h2> */}
                 <div className="space-y-4">
                   {cartItems.map((item) => (
-                    <CartItem key={item.id} item={item} isSavedItem={false} /> // Pass isSavedItem={false}
+                    <CartItem key={item.id} item={item} isSavedItem={false} />
                   ))}
                 </div>
                 <div className="text-right mt-4">
@@ -140,7 +163,6 @@ export default function CartPage() {
                 </h2>
                 <div className="space-y-4">
                   {savedItems.map((item) => (
-                    // Render CartItem component with isSavedItem={true}
                     <CartItem key={item.id} item={item} isSavedItem={true} />
                   ))}
                 </div>
@@ -150,7 +172,6 @@ export default function CartPage() {
 
           {/* Order Summary Card */}
           <div className="lg:col-span-1">
-            {/* Only show summary if there are items in the active cart */}
             {cartItems.length > 0 ? (
               <Card className="lg:sticky lg:top-24">
                 <CardHeader>
@@ -202,7 +223,7 @@ export default function CartPage() {
                         )}
                       />
                       <Button
-                        onClick={handleApplyCoupon}
+                        onClick={handleApplyCoupon} // Calls the updated handler
                         disabled={!!discountCode || !couponInput}
                         className="rounded-l-none"
                         variant="secondary"
@@ -210,15 +231,9 @@ export default function CartPage() {
                         Apply
                       </Button>
                     </div>
-                    {discountCode && (
-                      <p className="text-sm text-green-600 pt-1">
-                        Discount "{discountCode}" applied!
-                      </p>
-                    )}
                   </div>
                 </CardContent>
                 <CardFooter className="flex flex-col gap-4">
-                  {/* Checkout Button */}
                   <Button
                     onClick={handleProceedToCheckout}
                     size="lg"
@@ -226,7 +241,6 @@ export default function CartPage() {
                   >
                     Proceed to Checkout
                   </Button>
-
                   <Link
                     href="/"
                     className={cn(
@@ -239,7 +253,6 @@ export default function CartPage() {
                 </CardFooter>
               </Card>
             ) : (
-              // Optionally show a message if only saved items exist
               <Card className="lg:sticky lg:top-24 border-dashed">
                 <CardContent className="p-6 text-center text-muted-foreground">
                   Your active cart is empty. Add items or move saved items to
@@ -250,7 +263,7 @@ export default function CartPage() {
           </div>
         </div>
       </div>
-      {/* Login Alert Dialog */}
+      {/* Login Alert Dialog (Keep as is) */}
       <AlertDialog open={showLoginAlert} onOpenChange={setShowLoginAlert}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -268,6 +281,32 @@ export default function CartPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {/* --- Discount Alert Dialog --- */}
+      <AlertDialog open={showDiscountAlert} onOpenChange={setShowDiscountAlert}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            {/* Add Icon based on success/failure */}
+            <div className="flex items-center space-x-2">
+              {discountAlertInfo.success ? (
+                <CheckCircle className="h-5 w-5 text-green-500" />
+              ) : (
+                <XCircle className="h-5 w-5 text-red-500" />
+              )}
+              <AlertDialogTitle>{discountAlertInfo.title}</AlertDialogTitle>
+            </div>
+            <AlertDialogDescription className="pt-2">
+              {discountAlertInfo.message}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            {/* Only need an OK button (use AlertDialogAction for styling) */}
+            <AlertDialogAction onClick={() => setShowDiscountAlert(false)}>
+              OK
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      {/* --- End Discount Alert Dialog --- */}
     </>
   );
 }

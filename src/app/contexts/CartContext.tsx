@@ -15,12 +15,14 @@ import { Product, CartItem } from "@/app/data";
 // Define localStorage keys
 const CART_ITEMS_KEY = "myAppCartItems";
 const SAVED_ITEMS_KEY = "myAppSavedItems";
+const DISCOUNT_CODE_KEY = "myAppDiscountCode"; // Key for discount code
 
 // Helper function to safely get data from localStorage
 const loadFromLocalStorage = <T,>(key: string, defaultValue: T): T => {
   if (typeof window !== "undefined") {
     try {
       const item = window.localStorage.getItem(key);
+      // Handle null specifically for discount code if needed, JSON.parse handles null fine
       return item ? JSON.parse(item) : defaultValue;
     } catch (error) {
       console.error(`Error reading localStorage key “${key}”:`, error);
@@ -38,8 +40,8 @@ interface CartContextType {
   addToCart: (product: Product, quantity: number) => void;
   removeFromCart: (productId: string) => void;
   updateQuantity: (productId: string, newQuantity: number) => void;
-  applyDiscount: (code: string) => void;
-  clearCart: () => void; // This will now clear saved items too
+  applyDiscount: (code: string) => boolean; // Return true on success, false on failure
+  clearCart: () => void;
   saveForLater: (productId: string) => void;
   moveToCart: (productId: string) => void;
   removeFromSaved: (productId: string) => void;
@@ -62,34 +64,54 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   const [savedItems, setSavedItems] = useState<SavedItem[]>(() =>
     loadFromLocalStorage<SavedItem[]>(SAVED_ITEMS_KEY, [])
   );
-  const [discountCode, setDiscountCode] = useState<string | null>(null);
+  // --- Initialize discountCode state from localStorage ---
+  const [discountCode, setDiscountCode] = useState<string | null>(() =>
+    loadFromLocalStorage<string | null>(DISCOUNT_CODE_KEY, null)
+  );
 
-  // Effect to save cartItems
+  // --- Effects for saving to localStorage ---
   useEffect(() => {
     try {
-      if (typeof window !== "undefined") {
+      if (typeof window !== "undefined")
         window.localStorage.setItem(CART_ITEMS_KEY, JSON.stringify(cartItems));
-      }
     } catch (error) {
       console.error(`Error writing cartItems to localStorage:`, error);
     }
   }, [cartItems]);
 
-  // Effect to save savedItems
   useEffect(() => {
     try {
-      if (typeof window !== "undefined") {
+      if (typeof window !== "undefined")
         window.localStorage.setItem(
           SAVED_ITEMS_KEY,
           JSON.stringify(savedItems)
         );
-      }
     } catch (error) {
       console.error(`Error writing savedItems to localStorage:`, error);
     }
   }, [savedItems]);
 
-  // --- Core Cart Logic --- (Functions remain the same, they just update state, which triggers the useEffects above)
+  // --- Effect to save discountCode to localStorage ---
+  useEffect(() => {
+    try {
+      if (typeof window !== "undefined") {
+        if (discountCode) {
+          window.localStorage.setItem(
+            DISCOUNT_CODE_KEY,
+            JSON.stringify(discountCode)
+          );
+          console.log("Discount code saved to localStorage");
+        } else {
+          window.localStorage.removeItem(DISCOUNT_CODE_KEY); // Remove if null
+          console.log("Discount code removed from localStorage");
+        }
+      }
+    } catch (error) {
+      console.error(`Error writing discountCode to localStorage:`, error);
+    }
+  }, [discountCode]); // Run when discountCode changes
+
+  // --- Core Cart Logic ---
   const addToCart = useCallback(
     (product: Product, quantity: number) => {
       const existingCartItem = cartItems.find((item) => item.id === product.id);
@@ -147,23 +169,25 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
   // --- Updated clearCart ---
   const clearCart = useCallback(() => {
-    setCartItems([]); // Clear active cart
-    setSavedItems([]); // Also clear saved items
-    setDiscountCode(null);
-    console.log("Cart and Saved Items cleared");
-    // localStorage updates will be triggered by the useEffects for cartItems and savedItems
+    setCartItems([]);
+    setSavedItems([]);
+    setDiscountCode(null); // Set to null, triggers useEffect to remove from localStorage
+    console.log("Cart, Saved Items, and Discount Code cleared");
   }, []);
-  // --- End Updated clearCart ---
 
-  const applyDiscount = useCallback((code: string) => {
+  // --- Updated applyDiscount ---
+  const applyDiscount = useCallback((code: string): boolean => {
+    // Return boolean for success/failure
     if (code.toUpperCase() === "SAVE10") {
-      setDiscountCode("SAVE10");
-      alert("Discount SAVE10 applied!");
+      setDiscountCode("SAVE10"); // Set state, triggers useEffect to save
+      // alert('Discount SAVE10 applied!'); // Alert is now handled in CartPage
+      return true; // Indicate success
     } else {
-      alert("Invalid discount code.");
-      setDiscountCode(null);
+      setDiscountCode(null); // Set state to null, triggers useEffect to remove
+      // alert('Invalid discount code.'); // Alert is now handled in CartPage
+      return false; // Indicate failure
     }
-  }, []);
+  }, []); // No dependencies needed
 
   // --- Save for Later Logic ---
   const saveForLater = useCallback(

@@ -1,4 +1,6 @@
 // src/app/data/index.ts
+export type ProductCategory = 'Electronics' | 'Clothing' | 'Home Goods' | 'Books' | 'Sports';
+
 export interface Product {
   id: string;
   name: string;
@@ -6,6 +8,7 @@ export interface Product {
   imageUrl: string;
   stock: number; // 0 means out of stock
   description?: string;
+  category: ProductCategory; // Add category field
 }
 
 export interface CartItem extends Product {
@@ -28,3 +31,5 @@ export interface Order {
   estimatedDelivery?: Date;
   trackingNumber?: string;
 }
+
+export type SavedItem = CartItem;
