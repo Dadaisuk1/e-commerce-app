@@ -1,4 +1,3 @@
-// src/app/components/layout/Header.tsx
 "use client";
 
 import React, { useState, useEffect, KeyboardEvent } from "react";
@@ -35,19 +34,21 @@ export default function Header() {
   const [headerSearchTerm, setHeaderSearchTerm] = useState("");
 
   useEffect(() => {
-    setHeaderSearchTerm(searchParams.get("q") || "");
+    // Safely handle searchParams and update headerSearchTerm on changes
+    const category = searchParams.get("q");
+    if (category) {
+      setHeaderSearchTerm(category);
+    }
   }, [searchParams]);
 
-  // --- Updated handleSearch to navigate to /shop ---
   const handleSearch = (term: string) => {
-    const params = new URLSearchParams(); // Start fresh or keep existing non-search params if needed
+    const params = new URLSearchParams();
     if (term) {
       params.set("q", term);
     }
-    // Navigate to the /shop page with the query params
+    // Navigate to /shop with updated query params
     router.push(`/shop?${params.toString()}`);
   };
-  // --- End Updated handleSearch ---
 
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Enter") {

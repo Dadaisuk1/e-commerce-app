@@ -13,8 +13,8 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
-import { Button } from "@/components/ui/button";
+} from "@../../../components/ui/breadcrumb";
+import { Button } from "../../../components/ui/button";
 
 // Define available categories
 const categories: ProductCategory[] = [
@@ -40,67 +40,76 @@ export default function ShopPage({ searchParams }: ShopPageProps) {
 
   // Safely get the current category *only* for UI display (breadcrumbs, button state)
   // The actual filtering happens client-side in ProductGrid
-  const currentCategory = (searchParams?.category ?? undefined) as
-    | ProductCategory
-    | undefined;
+  export default function ShopPage({ searchParams }: ShopPageProps) {
+    const products = sampleProducts;
+    const currentCategory = searchParams?.category ?? undefined;
+    const query = searchParams?.q ?? "";
 
-  return (
-    <div>
-      {/* Breadcrumbs */}
-      <Breadcrumb className="mb-4">
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            {/* Link to landing page */}
-            <BreadcrumbLink asChild>
-              <Link href="/">Home</Link>
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            {currentCategory ? (
-              <>
-                {/* Link to the base shop page */}
-                <BreadcrumbLink asChild>
-                  <Link href="/shop">Shop</Link>
-                </BreadcrumbLink>
-                <BreadcrumbSeparator />
-                <BreadcrumbPage>{currentCategory}</BreadcrumbPage>
-              </>
-            ) : (
-              <BreadcrumbPage>Shop</BreadcrumbPage>
-            )}
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
+    // Filter products based on the category and search query
+    const filteredProducts = products.filter((product) => {
+      const matchesCategory = currentCategory
+        ? product.category === currentCategory
+        : true;
+      const matchesQuery = query
+        ? product.name.toLowerCase().includes(query.toLowerCase())
+        : true;
+      return matchesCategory && matchesQuery;
+    });
 
-      {/* Category Filters */}
-      <div className="mb-8 flex flex-wrap justify-center gap-2">
-        {/* "All" Button - Links back to the base shop page */}
-        <Button
-          variant={!currentCategory ? "default" : "outline"}
-          asChild
-          size="sm"
-        >
-          <Link href="/shop">All</Link> {/* Link to /shop */}
-        </Button>
-        {/* Category Buttons - Link to the shop page with category query param */}
-        {categories.map((category) => (
+    return (
+      <div>
+        <Breadcrumb className="mb-4">
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link href="/">Home</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              {currentCategory ? (
+                <>
+                  <BreadcrumbLink asChild>
+                    <Link href="/shop">Shop</Link>
+                  </BreadcrumbLink>
+                  <BreadcrumbSeparator />
+                  <BreadcrumbPage>{currentCategory}</BreadcrumbPage>
+                </>
+              ) : (
+                <BreadcrumbPage>Shop</BreadcrumbPage>
+              )}
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+
+        <div className="mb-8 flex flex-wrap justify-center gap-2">
           <Button
-            key={category}
-            variant={currentCategory === category ? "default" : "outline"}
+            variant={!currentCategory ? "default" : "outline"}
             asChild
             size="sm"
           >
-            {/* Link to /shop?category=... */}
-            <Link href={`/shop?category=${encodeURIComponent(category)}`}>
-              {category}
-            </Link>
+            <Link href="/shop">All</Link>
           </Button>
-        ))}
-      </div>
+          {categories.map((category) => (
+            <Button
+              key={category}
+              variant={currentCategory === category ? "default" : "outline"}
+              asChild
+              size="sm"
+            >
+              <Link
+                href={`/shop?category=${encodeURIComponent(
+                  category
+                )}&q=${encodeURIComponent(query)}`}
+              >
+                {category}
+              </Link>
+            </Button>
+          ))}
+        </div>
 
-      {/* Product Grid - Passes all products down. It handles filtering internally using useSearchParams */}
-      <ProductGrid allProducts={products} />
-    </div>
-  );
+        <ProductGrid allProducts={filteredProducts} />
+      </div>
+    );
+  }
 }
