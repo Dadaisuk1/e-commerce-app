@@ -1,173 +1,83 @@
 // src/app/contexts/AuthContext.tsx
-"use client";
+'use client';
 
-import React, {
-  createContext,
-  useState,
-  useContext,
-  ReactNode,
-  useMemo,
-  useCallback,
-  useEffect,
-} from "react";
+import React, { createContext, useState, useContext, ReactNode, useMemo, useCallback } from 'react';
 
-// Define localStorage key
-const AUTH_USER_KEY = "myAppAuthUser";
-
-// --- Re-use helper function ---
-const loadFromLocalStorage = <T,>(key: string, defaultValue: T): T => {
-  if (typeof window !== "undefined") {
-    try {
-      const item = window.localStorage.getItem(key);
-      return item ? JSON.parse(item) : defaultValue;
-    } catch (error) {
-      console.error(`Error reading localStorage key “${key}”:`, error);
-      return defaultValue;
-    }
-  }
-  return defaultValue;
-};
-
+// Define the shape of the user object (can be expanded later)
 interface User {
   id: string;
-  email: string;
+  email: string; // Example field
 }
 
+// Define the shape of the context data
 interface AuthContextType {
   currentUser: User | null;
-  login: (email: string, pass: string) => Promise<void>; // Make async to simulate API call
+  login: (email: string, pass: string) => void; // Simulate login
   logout: () => void;
-  register: (email: string, pass: string) => Promise<void>; // Make async
+  register: (email: string, pass: string) => void; // Simulate registration
 }
 
+// Create the context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Create a provider component
 interface AuthProviderProps {
   children: ReactNode;
 }
 
-// --- Define custom error types (optional but good practice) ---
-class AuthError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "AuthError";
-  }
-}
-class InvalidCredentialsError extends AuthError {
-  constructor() {
-    super("Invalid email or password.");
-    this.name = "InvalidCredentialsError";
-  }
-}
-class EmailExistsError extends AuthError {
-  constructor() {
-    super("An account with this email already exists.");
-    this.name = "EmailExistsError";
-  }
-}
-// --- End custom error types ---
-
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<User | null>(() =>
-    loadFromLocalStorage<User | null>(AUTH_USER_KEY, null)
-  );
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
-  // Effect to save/remove user from localStorage
-  useEffect(() => {
-    try {
-      if (typeof window !== "undefined") {
-        if (currentUser) {
-          window.localStorage.setItem(
-            AUTH_USER_KEY,
-            JSON.stringify(currentUser)
-          );
-          console.log("Current user saved to localStorage");
-        } else {
-          window.localStorage.removeItem(AUTH_USER_KEY);
-          console.log("Current user removed from localStorage");
-        }
-      }
-    } catch (error) {
-      console.error(`Error writing user to localStorage:`, error);
+  // Simulate login - replace with actual logic later
+  const login = useCallback((email: string, pass: string) => {
+    console.log(`Simulating login for: ${email}`);
+    // In a real app, you'd validate credentials here
+    if (email && pass) { // Basic check
+      const simulatedUser: User = { id: `user_${Date.now()}`, email: email };
+      setCurrentUser(simulatedUser);
+      console.log('Login successful (simulated)');
+      // Maybe redirect user using useRouter hook from 'next/navigation'
+    } else {
+        console.log('Login failed (simulated)');
     }
-  }, [currentUser]);
-
-  // --- Updated Login Function ---
-  const login = useCallback(
-    async (email: string, pass: string): Promise<void> => {
-      console.log(`Attempting login for: ${email}`);
-      // Simulate network delay
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      // --- Simulated Validation ---
-      // Hardcode one valid user for testing
-      const validEmail = "test@example.com";
-      const validPassword = "password123";
-
-      if (email === validEmail && pass === validPassword) {
-        const simulatedUser: User = { id: `user_${Date.now()}`, email: email };
-        setCurrentUser(simulatedUser); // Update state, triggers useEffect
-        console.log("Login successful");
-        // No need to return anything on success
-      } else {
-        console.log("Login failed: Invalid credentials");
-        // Throw a specific error
-        throw new InvalidCredentialsError();
-      }
-    },
-    []
-  ); // No dependencies needed for this simulation
-
-  // --- Updated Register Function ---
-  const register = useCallback(
-    async (email: string, pass: string): Promise<void> => {
-      console.log(`Attempting registration for: ${email}`);
-      // Simulate network delay
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      // --- Simulated Validation ---
-      const existingUserEmail = "test@example.com"; // Simulate this email already exists
-
-      if (email === existingUserEmail) {
-        console.log("Registration failed: Email already exists");
-        // Throw a specific error
-        throw new EmailExistsError();
-      } else if (email && pass) {
-        const simulatedUser: User = { id: `user_${Date.now()}`, email: email };
-        setCurrentUser(simulatedUser); // Log in immediately after registration
-        console.log("Registration successful");
-        // No need to return anything on success
-      } else {
-        // This case might indicate invalid input before calling register
-        console.log("Registration failed: Invalid input");
-        throw new AuthError("Registration failed due to invalid input.");
-      }
-    },
-    []
-  ); // No dependencies needed
-
-  const logout = useCallback(() => {
-    console.log("Logging out");
-    setCurrentUser(null);
   }, []);
 
-  const value = useMemo(
-    () => ({
-      currentUser,
-      login,
-      logout,
-      register,
-    }),
-    [currentUser, login, logout, register]
-  );
+  // Simulate registration - replace with actual logic later
+  const register = useCallback((email: string, pass: string) => {
+     console.log(`Simulating registration for: ${email}`);
+     if (email && pass) { // Basic check
+        const simulatedUser: User = { id: `user_${Date.now()}`, email: email };
+        setCurrentUser(simulatedUser); // Log in immediately after registration
+        console.log('Registration successful (simulated)');
+        // Maybe redirect user
+     } else {
+         console.log('Registration failed (simulated)');
+     }
+  }, []);
+
+  // Logout
+  const logout = useCallback(() => {
+    console.log('Logging out');
+    setCurrentUser(null);
+    // Maybe redirect user to homepage
+  }, []);
+
+  // Memoize the context value to prevent unnecessary re-renders
+  const value = useMemo(() => ({
+    currentUser,
+    login,
+    logout,
+    register,
+  }), [currentUser, login, logout, register]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
+// Create a custom hook for easy consumption
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
 };

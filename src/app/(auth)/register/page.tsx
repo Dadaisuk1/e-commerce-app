@@ -1,160 +1,135 @@
 // src/app/(auth)/register/page.tsx
-"use client";
+'use client'; // Needed for useState and hooks
 
-import React, { useState, FormEvent } from "react";
-import Link from "next/link";
-import { useAuth } from "@/app/hooks/useAuth";
-import { useRouter } from "next/navigation";
-
-// Import Shadcn/ui components
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-// Import Alert components
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertTriangle } from "lucide-react"; // Import an icon for the alert
+import React, { useState, FormEvent } from 'react';
+import Link from 'next/link';
+import { useAuth } from '@/app/hooks/useAuth';
+import { useRouter } from 'next/navigation'; // Import useRouter for redirection
 
 export default function RegisterPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const { register } = useAuth();
-  const router = useRouter();
+  const router = useRouter(); // Get router instance
 
-  const handleSubmit = async (event: FormEvent) => {
+  const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
-    setError(null); // Clear previous errors first
+    setError(null);
 
-    // Frontend validation first
     if (!email || !password || !confirmPassword) {
-      setError("Please fill in all fields.");
-      return;
-    }
-    if (password !== confirmPassword) {
-      setError("Passwords do not match.");
-      return;
-    }
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters long.");
+      setError('Please fill in all fields.');
       return;
     }
 
-    setIsLoading(true);
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
 
     try {
-      await register(email, password);
-      console.log("Redirecting to homepage after successful registration...");
-      router.push("/");
-    } catch (err: any) {
-      console.error("Registration error:", err);
-      if (err.name === "EmailExistsError") {
-        setError(err.message);
-      } else {
-        setError("An unexpected error occurred during registration.");
-      }
-      setIsLoading(false);
+      // Call the register function from AuthContext
+      register(email, password);
+
+      // --- IMPORTANT ---
+      // Similar to login, our simulated register logs the user in immediately.
+      // Redirect after successful registration.
+      console.log('Redirecting to homepage after simulated registration...');
+      router.push('/'); // Redirect to homepage
+
+    } catch (err) {
+      // Handle errors from a real API call here
+      console.error('Registration error (simulated catch):', err);
+      setError('Registration failed. Please try again.'); // Generic error
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100 px-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">
-            Create an Account
-          </CardTitle>
-          <CardDescription>
-            Enter your details below to register
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {/* Display Alert component when there's an error */}
+    <div className="flex items-center justify-center min-h-screen bg-gray-100">
+      <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md">
+        <h1 className="text-2xl font-bold text-center text-gray-900">Create an Account</h1>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Email address
+            </label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="block w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              placeholder="you@example.com"
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Password
+            </label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              autoComplete="new-password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="block w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              placeholder="Create a password"
+            />
+          </div>
+
+           <div>
+            <label
+              htmlFor="confirm-password"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Confirm Password
+            </label>
+            <input
+              id="confirm-password"
+              name="confirm-password"
+              type="password"
+              autoComplete="new-password"
+              required
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="block w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              placeholder="Confirm your password"
+            />
+          </div>
+
           {error && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertTriangle className="h-4 w-4" /> {/* Error Icon */}
-              <AlertTitle>Registration Failed</AlertTitle>
-              <AlertDescription>
-                {error} {/* Display the error message */}
-              </AlertDescription>
-            </Alert>
+            <p className="text-sm text-red-600">{error}</p>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Input fields remain the same */}
-            <div className="space-y-2">
-              <Label htmlFor="email">Email address</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                disabled={isLoading}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="new-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Create a password (min. 6 chars)"
-                disabled={isLoading}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="confirm-password">Confirm Password</Label>
-              <Input
-                id="confirm-password"
-                name="confirm-password"
-                type="password"
-                autoComplete="new-password"
-                required
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Confirm your password"
-                disabled={isLoading}
-              />
-            </div>
-
-            {/* Removed the old <p> tag for error display */}
-
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Registering..." : "Register"}
-            </Button>
-          </form>
-        </CardContent>
-        <CardFooter className="flex justify-center text-sm">
-          <p className="text-gray-600">
-            Already have an account?{" "}
-            <Link
-              href="/login"
-              className="font-medium text-blue-600 hover:text-blue-500 hover:underline"
+          <div>
+            <button
+              type="submit"
+              className="w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
-              Login here
-            </Link>
-          </p>
-        </CardFooter>
-      </Card>
+              Register
+            </button>
+          </div>
+        </form>
+        <p className="text-sm text-center text-gray-600">
+          Already have an account?{' '}
+          <Link href="/login" className="font-medium text-blue-600 hover:text-blue-500">
+            Login here
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }

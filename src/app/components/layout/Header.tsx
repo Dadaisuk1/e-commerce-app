@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useEffect, KeyboardEvent } from "react";
+import React from "react";
 import Link from "next/link";
 import { useCart } from "@/app/hooks/useCart";
 import { useAuth } from "@/app/hooks/useAuth";
+<<<<<<< HEAD
 import NotificationBell from "../NotificationBell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,11 +27,19 @@ export default function Header() {
   const { currentUser, logout } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
+=======
+import NotificationBell from "../NotificationBell"; // Import the NotificationBell component
+
+export default function Header() {
+  const { cartItems } = useCart();
+  const { currentUser, logout } = useAuth();
+>>>>>>> parent of 9d1fc42 (fully functional)
 
   const cartItemCount = cartItems.reduce(
     (count, item) => count + item.quantity,
     0
   );
+<<<<<<< HEAD
   const [headerSearchTerm, setHeaderSearchTerm] = useState("");
 
   useEffect(() => {
@@ -72,14 +81,23 @@ export default function Header() {
       <nav className="container mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
         {/* Logo links to Landing Page ('/') */}
         <div className="flex items-center flex-shrink-0">
+=======
+
+  return (
+    <header className="bg-white shadow-md sticky top-0 z-50">
+      <nav className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+        {/* Site Logo/Name */}
+        <div className="flex items-center">
+>>>>>>> parent of 9d1fc42 (fully functional)
           <Link
             href="/"
-            className="text-xl font-bold text-primary hover:opacity-80 transition-opacity"
+            className="text-2xl font-bold text-blue-600 hover:text-blue-800 transition-colors"
           >
             MyStore
           </Link>
         </div>
 
+<<<<<<< HEAD
         {/* Center: Search Bar */}
         <div className="flex-grow max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg hidden md:block">
           <div className="relative">
@@ -112,23 +130,50 @@ export default function Header() {
             variant="ghost"
             size="icon"
             asChild
+=======
+        {/* Navigation Links & Icons */}
+        <div className="flex items-center space-x-4 sm:space-x-6">
+          {/* Shop Link */}
+          <Link
+            href="/"
+            className="text-gray-600 hover:text-blue-600 transition-colors hidden sm:inline"
+          >
+            Shop
+          </Link>
+          {/* Cart Link with Item Count */}
+          <Link
+            href="/cart"
+            className="relative text-gray-600 hover:text-blue-600 transition-colors"
+>>>>>>> parent of 9d1fc42 (fully functional)
             aria-label={`Shopping Cart (${cartItemCount} items)`}
           >
-            <Link href="/cart" className="relative">
-              <ShoppingCart className="h-5 w-5 text-muted-foreground group-hover:text-foreground" />
-              {cartItemCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full h-4 w-4 flex items-center justify-center text-[10px]">
-                  {cartItemCount}
-                </span>
-              )}
-            </Link>
-          </Button>
-
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6 inline-block"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+              />
+            </svg>
+            {cartItemCount > 0 && (
+              <span className="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                {cartItemCount}
+              </span>
+            )}
+          </Link>
           {/* Notification Bell */}
-          <NotificationBell />
-
-          {/* Conditional Auth Section */}
+          <NotificationBell /> {/* Add the notification bell here */}
+          {/* Divider (Optional) */}
+          <div className="h-6 w-px bg-gray-300 hidden sm:block"></div>
+          {/* Conditional Auth Links */}
           {currentUser ? (
+<<<<<<< HEAD
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -167,18 +212,44 @@ export default function Header() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+=======
+            <>
+              <span className="text-sm text-gray-700 hidden lg:inline">
+                Hi, {currentUser.email}
+              </span>
+              <Link
+                href="/orders"
+                className="text-gray-600 hover:text-blue-600 transition-colors"
+              >
+                My Orders
+              </Link>
+              <button
+                onClick={logout}
+                className="text-gray-600 hover:text-blue-600 transition-colors px-3 py-1 rounded border border-gray-300 hover:border-blue-500 text-sm"
+              >
+                Logout
+              </button>
+            </>
+>>>>>>> parent of 9d1fc42 (fully functional)
           ) : (
             <>
-              <Button variant="ghost" size="sm" asChild>
-                <Link href="/login"> Login </Link>
-              </Button>
-              <Button size="sm" asChild>
-                <Link href="/register"> Register </Link>
-              </Button>
+              <Link
+                href="/login"
+                className="text-gray-600 hover:text-blue-600 transition-colors"
+              >
+                Login
+              </Link>
+              <Link
+                href="/register"
+                className="text-gray-600 hover:text-blue-600 transition-colors bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
+              >
+                Register
+              </Link>
             </>
           )}
         </div>
       </nav>
+<<<<<<< HEAD
       {/* Search Bar (visible on smaller screens) */}
       <div className="container mx-auto px-4 pb-3 md:hidden">
         <div className="relative">
@@ -193,6 +264,8 @@ export default function Header() {
           />
         </div>
       </div>
+=======
+>>>>>>> parent of 9d1fc42 (fully functional)
     </header>
   );
 }
