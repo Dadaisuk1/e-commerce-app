@@ -1,110 +1,201 @@
 // src/app/components/layout/Header.tsx
 "use client";
 
-import React from "react";
+import React, { useState, useEffect, KeyboardEvent } from "react";
 import Link from "next/link";
-import { useCart } from "@/app/hooks/useCart";
+import { useCart } from "@/app/hooks/useCart"; // Import useCart
 import { useAuth } from "@/app/hooks/useAuth";
-import NotificationBell from "../NotificationBell"; // Import the NotificationBell component
+import NotificationBell from "../NotificationBell";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ShoppingCart, Search } from "lucide-react";
+
+// Import hooks for navigation and reading search params
+import { useRouter, useSearchParams } from "next/navigation";
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function Header() {
-  const { cartItems } = useCart();
+  const { cartItems, clearCart } = useCart(); // Get clearCart function
   const { currentUser, logout } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams(); // Hook to read URL query params
 
   const cartItemCount = cartItems.reduce(
     (count, item) => count + item.quantity,
     0
   );
 
+  // State for the search input in the header
+  const [headerSearchTerm, setHeaderSearchTerm] = useState("");
+
+  // Effect to sync header input with URL search param 'q' when page loads/URL changes
+  useEffect(() => {
+    setHeaderSearchTerm(searchParams.get("q") || "");
+  }, [searchParams]);
+
+  // Function to handle search submission (e.g., pressing Enter)
+  const handleSearch = (term: string) => {
+    const params = new URLSearchParams(searchParams.toString()); // Create mutable copy
+    if (term) {
+      params.set("q", term);
+    } else {
+      params.delete("q"); // Remove 'q' if search is cleared
+    }
+    // Navigate to the root page (shop page) with the new query params
+    // Using toString() correctly formats the query string
+    router.push(`/?${params.toString()}`);
+  };
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter") {
+      handleSearch(headerSearchTerm);
+    }
+  };
+
+  const getUserInitials = (email: string | undefined): string => {
+    if (!email) return "?";
+    return email.substring(0, 1).toUpperCase();
+  };
+
+  // --- Updated Logout Handler ---
+  const handleLogout = () => {
+    logout(); // Call the logout function from AuthContext
+    clearCart(); // Call the clearCart function from CartContext
+    // Optional: Redirect to home or login page after logout
+    // router.push('/');
+    console.log("User logged out and cart cleared.");
+  };
+  // --- End Updated Logout Handler ---
+
   return (
-    <header className="bg-white shadow-md sticky top-0 z-50">
-      <nav className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-        {/* Site Logo/Name */}
-        <div className="flex items-center">
+    <header className="bg-background border-b border-border sticky top-0 z-50 shadow-sm">
+      <nav className="container mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+        {" "}
+        {/* Added gap */}
+        {/* Left Side: Logo */}
+        <div className="flex items-center flex-shrink-0">
           <Link
             href="/"
-            className="text-2xl font-bold text-blue-600 hover:text-blue-800 transition-colors"
+            className="text-xl font-bold text-primary hover:opacity-80 transition-opacity"
           >
             MyStore
           </Link>
         </div>
-
-        {/* Navigation Links & Icons */}
-        <div className="flex items-center space-x-4 sm:space-x-6">
-          {/* Shop Link */}
-          <Link
-            href="/"
-            className="text-gray-600 hover:text-blue-600 transition-colors hidden sm:inline"
-          >
-            Shop
-          </Link>
-          {/* Cart Link with Item Count */}
-          <Link
-            href="/cart"
-            className="relative text-gray-600 hover:text-blue-600 transition-colors"
+        {/* Center: Search Bar (visible on larger screens) */}
+        <div className="flex-grow max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg hidden md:block">
+          {" "}
+          {/* Adjust max-width and visibility */}
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Search products..."
+              value={headerSearchTerm}
+              onChange={(e) => setHeaderSearchTerm(e.target.value)}
+              onKeyDown={handleKeyDown} // Trigger search on Enter
+              className="pl-8 w-full h-9" // Add padding for icon
+            />
+          </div>
+        </div>
+        {/* Right Side: Icons & Auth */}
+        <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
+          {/* Cart Link */}
+          <Button
+            variant="ghost"
+            size="icon"
+            asChild
             aria-label={`Shopping Cart (${cartItemCount} items)`}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6 inline-block"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
-              />
-            </svg>
-            {cartItemCount > 0 && (
-              <span className="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                {cartItemCount}
-              </span>
-            )}
-          </Link>
+            <Link href="/cart" className="relative">
+              <ShoppingCart className="h-5 w-5 text-muted-foreground group-hover:text-foreground" />
+              {cartItemCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full h-4 w-4 flex items-center justify-center text-[10px]">
+                  {cartItemCount}
+                </span>
+              )}
+            </Link>
+          </Button>
+
           {/* Notification Bell */}
-          <NotificationBell /> {/* Add the notification bell here */}
-          {/* Divider (Optional) */}
-          <div className="h-6 w-px bg-gray-300 hidden sm:block"></div>
-          {/* Conditional Auth Links */}
+          <NotificationBell />
+
+          {/* Conditional Auth Section */}
           {currentUser ? (
-            <>
-              <span className="text-sm text-gray-700 hidden lg:inline">
-                Hi, {currentUser.email}
-              </span>
-              <Link
-                href="/orders"
-                className="text-gray-600 hover:text-blue-600 transition-colors"
-              >
-                My Orders
-              </Link>
-              <button
-                onClick={logout}
-                className="text-gray-600 hover:text-blue-600 transition-colors px-3 py-1 rounded border border-gray-300 hover:border-blue-500 text-sm"
-              >
-                Logout
-              </button>
-            </>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="relative h-8 w-8 rounded-full"
+                >
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback>
+                      {getUserInitials(currentUser.email)}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">
+                      My Account
+                    </p>
+                    <p className="text-xs leading-none text-muted-foreground">
+                      {currentUser.email}
+                    </p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild className="cursor-pointer">
+                  <Link href="/orders">My Orders</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem disabled> Settings </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                {/* Updated Logout Item */}
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  className="cursor-pointer"
+                >
+                  Logout
+                </DropdownMenuItem>
+                {/* End Updated Logout Item */}
+              </DropdownMenuContent>
+            </DropdownMenu>
           ) : (
             <>
-              <Link
-                href="/login"
-                className="text-gray-600 hover:text-blue-600 transition-colors"
-              >
-                Login
-              </Link>
-              <Link
-                href="/register"
-                className="text-gray-600 hover:text-blue-600 transition-colors bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
-              >
-                Register
-              </Link>
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/login"> Login </Link>
+              </Button>
+              <Button size="sm" asChild>
+                <Link href="/register"> Register </Link>
+              </Button>
             </>
           )}
         </div>
       </nav>
+      {/* Search Bar (visible on smaller screens) - Optional */}
+      <div className="container mx-auto px-4 pb-3 md:hidden">
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder="Search products..."
+            value={headerSearchTerm}
+            onChange={(e) => setHeaderSearchTerm(e.target.value)}
+            onKeyDown={handleKeyDown}
+            className="pl-8 w-full h-9"
+          />
+        </div>
+      </div>
     </header>
   );
 }

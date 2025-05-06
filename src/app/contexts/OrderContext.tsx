@@ -8,22 +8,54 @@ import React, {
   ReactNode,
   useMemo,
   useCallback,
+  useEffect,
 } from "react";
-import { Order, CartItem, OrderStatus } from "@/app/data"; // Import necessary types
-import { generateOrderId } from "@/app/lib/utils"; // Utility to create unique IDs
+import { Order, CartItem, OrderStatus } from "@/app/data";
+import { generateOrderId } from "@/app/lib/utils";
 
-// Define the shape of a notification message
+// Define localStorage key
+const ORDERS_KEY = "myAppOrders";
+
+// --- Re-use helper function or define locally ---
+// (Assuming it's defined elsewhere or copy it here if needed)
+const loadFromLocalStorage = <T,>(key: string, defaultValue: T): T => {
+  if (typeof window !== "undefined") {
+    try {
+      const item = window.localStorage.getItem(key);
+      // Add check for date strings and convert them back to Date objects
+      if (item) {
+        const parsed = JSON.parse(item);
+        // Example: If 'orders' array contains date strings, parse them
+        if (Array.isArray(parsed) && key === ORDERS_KEY) {
+          return parsed.map((order) => ({
+            ...order,
+            orderDate: order.orderDate ? new Date(order.orderDate) : undefined,
+            estimatedDelivery: order.estimatedDelivery
+              ? new Date(order.estimatedDelivery)
+              : undefined,
+          })) as T;
+        }
+        return parsed;
+      }
+      return defaultValue;
+    } catch (error) {
+      console.error(`Error reading localStorage key “${key}”:`, error);
+      return defaultValue;
+    }
+  }
+  return defaultValue;
+};
+
 interface Notification {
-  id: number; // Simple ID for key prop
+  id: number;
   message: string;
   read: boolean;
   timestamp: Date;
 }
 
-// Define the shape of the context data
 interface OrderContextType {
   orders: Order[];
-  notifications: Notification[]; // Add notifications state
+  notifications: Notification[];
   placeOrder: (
     cartItems: CartItem[],
     totalDetails: {
@@ -38,36 +70,49 @@ interface OrderContextType {
   ) => Order;
   getOrderById: (orderId: string) => Order | undefined;
   updateOrderStatus: (orderId: string, newStatus: OrderStatus) => void;
-  addNotification: (message: string) => void; // Function to add notifications
-  markNotificationsRead: () => void; // Function to mark as read
-  // Add functions to get orders for a specific user later
+  addNotification: (message: string) => void;
+  markNotificationsRead: () => void;
 }
 
-// Create the context
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
 
-// Create a provider component
 interface OrderProviderProps {
   children: ReactNode;
 }
 
 export const OrderProvider: React.FC<OrderProviderProps> = ({ children }) => {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [notifications, setNotifications] = useState<Notification[]>([]); // State for notifications
+  // --- Initialize state from localStorage ---
+  const [orders, setOrders] = useState<Order[]>(() =>
+    loadFromLocalStorage<Order[]>(ORDERS_KEY, [])
+  );
+  // Notifications are usually session-specific, not persisted
+  const [notifications, setNotifications] = useState<Notification[]>([]);
 
-  // Helper to add a notification
+  // --- Effect to save orders to localStorage whenever it changes ---
+  useEffect(() => {
+    try {
+      if (typeof window !== "undefined") {
+        // Dates need to be stored as strings (ISO format is standard)
+        window.localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
+        console.log("Orders saved to localStorage");
+      }
+    } catch (error) {
+      console.error(`Error writing orders to localStorage:`, error);
+    }
+  }, [orders]); // Dependency array: only run when orders changes
+
+  // --- Functions (remain the same logic, just update state) ---
+
   const addNotification = useCallback((message: string) => {
     const newNotification: Notification = {
-      id: Date.now(), // Simple unique ID based on timestamp
+      id: Date.now(),
       message,
       read: false,
       timestamp: new Date(),
     };
-    setNotifications((prev) => [newNotification, ...prev]); // Add to the beginning of the list
-    console.log(`Notification added: ${message}`);
+    setNotifications((prev) => [newNotification, ...prev]);
   }, []);
 
-  // Function to place a new order
   const placeOrder = useCallback(
     (
       cartItems: CartItem[],
@@ -90,58 +135,46 @@ export const OrderProvider: React.FC<OrderProviderProps> = ({ children }) => {
         total: totalDetails.total,
         shippingAddress: { ...shippingAddress },
         billingAddress: { ...billingAddress },
-        orderDate: new Date(),
+        orderDate: new Date(), // Store as Date object
         status: "Processing",
       };
 
-      console.log("Placing new order:", newOrder);
+      // Update state, which triggers the useEffect to save
       setOrders((prevOrders) => [...prevOrders, newOrder]);
-
-      // Add notification for order placement
       addNotification(
         `Order #${newOrder.id.split("-")[1]} placed successfully!`
       );
-
-      // Cart clearing is handled in CheckoutPage after this function returns the order
-
       return newOrder;
     },
     [addNotification]
-  ); // Add addNotification dependency
+  );
 
-  // Function to retrieve a specific order
   const getOrderById = useCallback(
     (orderId: string): Order | undefined => {
+      // Orders state already has Date objects thanks to loadFromLocalStorage
       return orders.find((order) => order.id === orderId);
     },
     [orders]
   );
 
-  // Function to simulate updating order status
   const updateOrderStatus = useCallback(
     (orderId: string, newStatus: OrderStatus) => {
-      let notificationMessage = ""; // Variable to hold the notification message
-
+      let notificationMessage = "";
       setOrders((prevOrders) =>
         prevOrders.map((order) => {
           if (order.id === orderId && order.status !== newStatus) {
-            // Only update if status actually changes
-            console.log(`Updating order ${orderId} status to ${newStatus}`);
             const updatedOrder = { ...order, status: newStatus };
-
-            // Set notification message based on new status
             notificationMessage = `Order #${
               orderId.split("-")[1]
             } status updated to ${newStatus}.`;
-
             if (newStatus === "Shipped") {
               updatedOrder.trackingNumber = `TN${Date.now()}`;
               const deliveryDate = new Date();
               deliveryDate.setDate(deliveryDate.getDate() + 5);
-              updatedOrder.estimatedDelivery = deliveryDate;
+              updatedOrder.estimatedDelivery = deliveryDate; // Store as Date object
             } else if (newStatus === "Delivered") {
               if (!updatedOrder.estimatedDelivery) {
-                updatedOrder.estimatedDelivery = new Date();
+                updatedOrder.estimatedDelivery = new Date(); // Store as Date object
               }
             }
             return updatedOrder;
@@ -149,31 +182,26 @@ export const OrderProvider: React.FC<OrderProviderProps> = ({ children }) => {
           return order;
         })
       );
-
-      // Add the notification outside the map function if a message was set
       if (notificationMessage) {
         addNotification(notificationMessage);
       }
     },
     [addNotification]
-  ); // Add addNotification dependency
+  );
 
-  // Function to mark all notifications as read
   const markNotificationsRead = useCallback(() => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-    console.log("Marked all notifications as read");
   }, []);
 
-  // Memoize the context value
   const value = useMemo(
     () => ({
       orders,
-      notifications, // Include notifications
+      notifications,
       placeOrder,
       getOrderById,
       updateOrderStatus,
-      addNotification, // Expose addNotification if needed directly
-      markNotificationsRead, // Expose mark as read function
+      addNotification,
+      markNotificationsRead,
     }),
     [
       orders,
@@ -191,7 +219,6 @@ export const OrderProvider: React.FC<OrderProviderProps> = ({ children }) => {
   );
 };
 
-// Update the hook export if needed (though usually done in a separate file)
 export const useOrders = (): OrderContextType => {
   const context = useContext(OrderContext);
   if (context === undefined) {
