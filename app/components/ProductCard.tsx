@@ -1,92 +1,98 @@
 // src/app/components/ProductCard.tsx
-"use client";
+'use client';
 
-import React from "react";
-import Image from "next/image";
-import { Product } from "../data";
-import { useCart } from "../hooks/useCart"; // Import the custom hook
-import { formatCurrency } from "../lib/utils";
+import React from 'react';
+import Image from 'next/image';
+import { Product } from '@/app/data';
+import { useCart } from '@/app/hooks/useCart';
+import { formatCurrency } from '@/app/lib/utils';
+import { cn } from '@/app/lib/utils'; // Import the cn utility
+
+// Import Shadcn/ui components
+import { Button } from '@/app/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/app/components/ui/card';
+import { Badge } from '@/app/components/ui/badge'; // Add Badge for stock status
 
 interface ProductCardProps {
   product: Product;
 }
 
 export function ProductCard({ product }: ProductCardProps) {
-  // Use the hook to get cart state and functions
   const { addToCart, cartItems } = useCart();
-
-  // Find how many of this specific item are currently in the cart
-  const quantityInCart =
-    cartItems.find((item) => item.id === product.id)?.quantity || 0;
-
-  // Calculate the stock currently available to add
+  const quantityInCart = cartItems.find(item => item.id === product.id)?.quantity || 0;
   const availableStock = product.stock - quantityInCart;
-
-  // Determine if the item is effectively out of stock (considering cart quantity)
   const isEffectivelyOutOfStock = availableStock <= 0;
 
   const handleAddToCart = () => {
-    // Only add if there's available stock
     if (!isEffectivelyOutOfStock) {
-      addToCart(product, 1); // Add 1 item to the cart
+      addToCart(product, 1);
     } else {
-      // Optional: Add feedback if trying to add when none are available
       alert(`Sorry, no more ${product.name} available to add.`);
     }
   };
 
   return (
-    <div className="border rounded-lg p-4 shadow-sm flex flex-col bg-white">
-      {/* Image Placeholder */}
-      <div className="relative w-full h-48 mb-4 bg-gray-200 rounded flex items-center justify-center">
-        <Image
-          src={product.imageUrl || "/images/placeholder.svg"} // Fallback image
-          alt={product.name}
-          fill // Use fill prop
-          style={{ objectFit: "contain" }} // Use style prop
-          className="rounded"
-        />
-        {/* Show "Out of Stock" overlay based on *initial* stock for clarity */}
-        {product.stock <= 0 && (
-          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded">
-            <span className="text-white font-bold text-lg">Out of Stock</span>
-          </div>
-        )}
-      </div>
+    // Use Shadcn Card component as the main container
+    <Card className="flex flex-col overflow-hidden h-full"> {/* Ensure card takes full height if in grid */}
+      <CardHeader className="p-0 relative"> {/* Remove padding for image */}
+        {/* Image Container */}
+        <div className="relative w-full aspect-square bg-gray-100"> {/* Use aspect-square for consistent image ratio */}
+          <Image
+            src={product.imageUrl || '/images/placeholder.svg'}
+            alt={product.name}
+            fill
+            style={{ objectFit: 'contain' }} // Or 'cover' depending on desired look
+            className="rounded-t-lg" // Only round top corners if image is flush
+            sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, 23vw" // Example sizes prop for optimization
+          />
+          {/* Out of Stock Overlay */}
+          {product.stock <= 0 && (
+            <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center rounded-t-lg">
+              <Badge variant="destructive" className="text-sm">Out of Stock</Badge>
+            </div>
+          )}
+        </div>
+      </CardHeader>
 
-      <h3 className="text-lg font-semibold mb-1 truncate">{product.name}</h3>
-      <p className="text-gray-700 mb-2 font-medium">
-        {formatCurrency(product.price)}
-      </p>
-      <p className="text-sm text-gray-500 mb-4 min-h-[40px]">
-        {product.description || "No description available."}
-      </p>
+      <CardContent className="p-4 flex-grow"> {/* Add padding back for content, flex-grow allows content to push footer down */}
+        {/* Use CardTitle for product name */}
+        <CardTitle className="text-lg font-semibold mb-1 truncate">{product.name}</CardTitle>
+        {/* Use CardDescription for price or short description */}
+        <CardDescription className="text-gray-700 mb-2 font-medium">
+          {formatCurrency(product.price)}
+        </CardDescription>
+        {/* Main description */}
+        <p className="text-sm text-gray-500 mb-4 min-h-[40px]">
+          {product.description || "No description available."}
+        </p>
+      </CardContent>
 
-      {/* Display Available Stock */}
-      <p
-        className={`text-sm mb-4 font-semibold ${
-          isEffectivelyOutOfStock ? "text-red-600" : "text-green-700"
-        }`}
-      >
-        {isEffectivelyOutOfStock
-          ? product.stock <= 0
-            ? "Out of Stock"
-            : "None available (in cart)" // Differentiate why it's unavailable
-          : `${availableStock} available`}
-      </p>
+      <CardFooter className="p-4 pt-0 flex flex-col items-start gap-3"> {/* Footer for stock and button */}
+         {/* Display Available Stock using Badge */}
+         <div> {/* Wrap badge for layout control if needed */}
+            <Badge
+                variant={isEffectivelyOutOfStock ? "outline" : "secondary"}
+                className={cn(
+                    "text-xs font-semibold",
+                    isEffectivelyOutOfStock ? "border-red-500 text-red-600" : "text-green-700"
+                )}
+            >
+                {isEffectivelyOutOfStock
+                ? (product.stock <= 0 ? "Out of Stock" : "None available (in cart)")
+                : `${availableStock} available`}
+            </Badge>
+         </div>
 
-      {/* Add to Cart Button - Disable based on available stock */}
-      <button
-        onClick={handleAddToCart}
-        disabled={isEffectivelyOutOfStock} // Disable if none are available to add
-        className={`mt-auto w-full px-4 py-2 rounded text-white font-semibold transition-colors duration-200 ${
-          isEffectivelyOutOfStock
-            ? "bg-gray-400 cursor-not-allowed"
-            : "bg-blue-600 hover:bg-blue-700"
-        }`}
-      >
-        {isEffectivelyOutOfStock ? "Unavailable" : "Add to Cart"}
-      </button>
-    </div>
+        {/* Use Shadcn Button component */}
+        <Button
+          onClick={handleAddToCart}
+          disabled={isEffectivelyOutOfStock}
+          className="w-full mt-auto" // Ensure button takes full width
+          variant={isEffectivelyOutOfStock ? "outline" : "default"} // Use different variants
+        >
+          {isEffectivelyOutOfStock ? "Unavailable" : "Add to Cart"}
+        </Button>
+      </CardFooter>
+    </Card>
   );
 }
