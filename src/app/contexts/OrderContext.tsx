@@ -12,9 +12,18 @@ import React, {
 import { Order, CartItem, OrderStatus } from "@/app/data"; // Import necessary types
 import { generateOrderId } from "@/app/lib/utils"; // Utility to create unique IDs
 
+// Define the shape of a notification message
+interface Notification {
+  id: number; // Simple ID for key prop
+  message: string;
+  read: boolean;
+  timestamp: Date;
+}
+
 // Define the shape of the context data
 interface OrderContextType {
   orders: Order[];
+  notifications: Notification[]; // Add notifications state
   placeOrder: (
     cartItems: CartItem[],
     totalDetails: {
@@ -23,12 +32,14 @@ interface OrderContextType {
       total: number;
       discountCode: string | null;
     },
-    shippingAddress: Record<string, string>, // Simple object for address
+    shippingAddress: Record<string, string>,
     billingAddress: Record<string, string>,
-    userId: string | null // From AuthContext
-  ) => Order; // Return the created order
+    userId: string | null
+  ) => Order;
   getOrderById: (orderId: string) => Order | undefined;
-  updateOrderStatus: (orderId: string, newStatus: OrderStatus) => void; // For simulation later
+  updateOrderStatus: (orderId: string, newStatus: OrderStatus) => void;
+  addNotification: (message: string) => void; // Function to add notifications
+  markNotificationsRead: () => void; // Function to mark as read
   // Add functions to get orders for a specific user later
 }
 
@@ -42,6 +53,19 @@ interface OrderProviderProps {
 
 export const OrderProvider: React.FC<OrderProviderProps> = ({ children }) => {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]); // State for notifications
+
+  // Helper to add a notification
+  const addNotification = useCallback((message: string) => {
+    const newNotification: Notification = {
+      id: Date.now(), // Simple unique ID based on timestamp
+      message,
+      read: false,
+      timestamp: new Date(),
+    };
+    setNotifications((prev) => [newNotification, ...prev]); // Add to the beginning of the list
+    console.log(`Notification added: ${message}`);
+  }, []);
 
   // Function to place a new order
   const placeOrder = useCallback(
@@ -58,30 +82,32 @@ export const OrderProvider: React.FC<OrderProviderProps> = ({ children }) => {
       userId: string | null
     ): Order => {
       const newOrder: Order = {
-        id: generateOrderId(), // Generate a unique ID
+        id: generateOrderId(),
         userId: userId,
-        items: [...cartItems], // Copy cart items
+        items: [...cartItems],
         subtotal: totalDetails.subtotal,
         discountApplied: totalDetails.discountAmount,
         total: totalDetails.total,
         shippingAddress: { ...shippingAddress },
         billingAddress: { ...billingAddress },
         orderDate: new Date(),
-        status: "Processing", // Initial status
-        // estimatedDelivery and trackingNumber will be added later
+        status: "Processing",
       };
 
       console.log("Placing new order:", newOrder);
       setOrders((prevOrders) => [...prevOrders, newOrder]);
 
-      // IMPORTANT: We need to clear the cart after placing the order.
-      // This requires access to the CartContext's clearCart function.
-      // We'll handle this interaction in the CheckoutPage component itself for now.
+      // Add notification for order placement
+      addNotification(
+        `Order #${newOrder.id.split("-")[1]} placed successfully!`
+      );
 
-      return newOrder; // Return the newly created order object
+      // Cart clearing is handled in CheckoutPage after this function returns the order
+
+      return newOrder;
     },
-    []
-  ); // No dependencies needed for this simulation
+    [addNotification]
+  ); // Add addNotification dependency
 
   // Function to retrieve a specific order
   const getOrderById = useCallback(
@@ -91,22 +117,29 @@ export const OrderProvider: React.FC<OrderProviderProps> = ({ children }) => {
     [orders]
   );
 
-  // Function to simulate updating order status (for tracking demo later)
+  // Function to simulate updating order status
   const updateOrderStatus = useCallback(
     (orderId: string, newStatus: OrderStatus) => {
+      let notificationMessage = ""; // Variable to hold the notification message
+
       setOrders((prevOrders) =>
         prevOrders.map((order) => {
-          if (order.id === orderId) {
+          if (order.id === orderId && order.status !== newStatus) {
+            // Only update if status actually changes
             console.log(`Updating order ${orderId} status to ${newStatus}`);
             const updatedOrder = { ...order, status: newStatus };
-            // Add tracking/delivery info if shipped
+
+            // Set notification message based on new status
+            notificationMessage = `Order #${
+              orderId.split("-")[1]
+            } status updated to ${newStatus}.`;
+
             if (newStatus === "Shipped") {
               updatedOrder.trackingNumber = `TN${Date.now()}`;
               const deliveryDate = new Date();
-              deliveryDate.setDate(deliveryDate.getDate() + 5); // Estimate 5 days
+              deliveryDate.setDate(deliveryDate.getDate() + 5);
               updatedOrder.estimatedDelivery = deliveryDate;
             } else if (newStatus === "Delivered") {
-              // Maybe update delivery date to now if not set
               if (!updatedOrder.estimatedDelivery) {
                 updatedOrder.estimatedDelivery = new Date();
               }
@@ -116,19 +149,41 @@ export const OrderProvider: React.FC<OrderProviderProps> = ({ children }) => {
           return order;
         })
       );
+
+      // Add the notification outside the map function if a message was set
+      if (notificationMessage) {
+        addNotification(notificationMessage);
+      }
     },
-    []
-  );
+    [addNotification]
+  ); // Add addNotification dependency
+
+  // Function to mark all notifications as read
+  const markNotificationsRead = useCallback(() => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    console.log("Marked all notifications as read");
+  }, []);
 
   // Memoize the context value
   const value = useMemo(
     () => ({
       orders,
+      notifications, // Include notifications
       placeOrder,
       getOrderById,
       updateOrderStatus,
+      addNotification, // Expose addNotification if needed directly
+      markNotificationsRead, // Expose mark as read function
     }),
-    [orders, placeOrder, getOrderById, updateOrderStatus]
+    [
+      orders,
+      notifications,
+      placeOrder,
+      getOrderById,
+      updateOrderStatus,
+      addNotification,
+      markNotificationsRead,
+    ]
   );
 
   return (
@@ -136,7 +191,7 @@ export const OrderProvider: React.FC<OrderProviderProps> = ({ children }) => {
   );
 };
 
-// Create a custom hook for easy consumption
+// Update the hook export if needed (though usually done in a separate file)
 export const useOrders = (): OrderContextType => {
   const context = useContext(OrderContext);
   if (context === undefined) {
