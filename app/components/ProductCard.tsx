@@ -3,10 +3,11 @@
 
 import React from "react";
 import Image from "next/image";
+import Link from "next/link"; // Import Link
 import { Product } from "../../app/data";
 import { useCart } from "../../app/hooks/useCart";
 import { formatCurrency } from "../../app/lib/utils";
-import { cn } from "../../app/lib/utils"; // Import the cn utility
+import { cn } from "../../app/lib/utils";
 
 // Import Shadcn/ui components
 import { Button } from "../../src/components/ui/button";
@@ -18,7 +19,7 @@ import {
   CardHeader,
   CardTitle,
 } from "../../src/components/ui/card";
-import { Badge } from "../../src/components/ui/badge"; // Add Badge for stock status
+import { Badge } from "../../src/components/ui/badge";
 
 interface ProductCardProps {
   product: Product;
@@ -31,7 +32,11 @@ export function ProductCard({ product }: ProductCardProps) {
   const availableStock = product.stock - quantityInCart;
   const isEffectivelyOutOfStock = availableStock <= 0;
 
-  const handleAddToCart = () => {
+  const handleAddToCart = (event: React.MouseEvent<HTMLButtonElement>) => {
+    // Stop the click from propagating to the Link wrapper if the button is inside it
+    event.stopPropagation();
+    event.preventDefault(); // Prevent default Link behavior if necessary
+
     if (!isEffectivelyOutOfStock) {
       addToCart(product, 1);
     } else {
@@ -39,27 +44,26 @@ export function ProductCard({ product }: ProductCardProps) {
     }
   };
 
+  // Define the product detail page URL
+  const productUrl = `/products/${product.id}`;
+
   return (
-    // Use Shadcn Card component as the main container
-    <Card className="flex flex-col overflow-hidden h-full">
-      {" "}
-      {/* Ensure card takes full height if in grid */}
+    // Wrap the main content area (excluding the button potentially) in a Link
+    <Card className="flex flex-col overflow-hidden h-full transition-shadow hover:shadow-md">
       <CardHeader className="p-0 relative">
-        {" "}
-        {/* Remove padding for image */}
-        {/* Image Container */}
-        <div className="relative w-full aspect-square bg-gray-100">
-          {" "}
-          {/* Use aspect-square for consistent image ratio */}
+        {/* Make image link to product page */}
+        <Link
+          href={productUrl}
+          className="block aspect-square relative bg-gray-100"
+        >
           <Image
             src={product.imageUrl || "/images/placeholder.svg"}
             alt={product.name}
             fill
-            style={{ objectFit: "contain" }} // Or 'cover' depending on desired look
-            className="rounded-t-lg" // Only round top corners if image is flush
-            sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, 23vw" // Example sizes prop for optimization
+            style={{ objectFit: "contain" }}
+            className="rounded-t-lg"
+            sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, 23vw"
           />
-          {/* Out of Stock Overlay */}
           {product.stock <= 0 && (
             <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center rounded-t-lg">
               <Badge variant="destructive" className="text-sm">
@@ -67,31 +71,28 @@ export function ProductCard({ product }: ProductCardProps) {
               </Badge>
             </div>
           )}
-        </div>
+        </Link>
       </CardHeader>
+
       <CardContent className="p-4 flex-grow">
-        {" "}
-        {/* Add padding back for content, flex-grow allows content to push footer down */}
-        {/* Use CardTitle for product name */}
-        <CardTitle className="text-lg font-semibold mb-1 truncate">
-          {product.name}
-        </CardTitle>
-        {/* Use CardDescription for price or short description */}
+        {/* Make title link to product page */}
+        <Link href={productUrl}>
+          <CardTitle className="text-lg font-semibold mb-1 truncate hover:text-primary transition-colors">
+            {product.name}
+          </CardTitle>
+        </Link>
         <CardDescription className="text-gray-700 mb-2 font-medium">
           {formatCurrency(product.price)}
         </CardDescription>
-        {/* Main description */}
-        <p className="text-sm text-gray-500 mb-4 min-h-[40px]">
+        <p className="text-sm text-gray-500 mb-4 min-h-[40px] line-clamp-2">
+          {" "}
+          {/* Limit description lines */}
           {product.description || "No description available."}
         </p>
       </CardContent>
+
       <CardFooter className="p-4 pt-0 flex flex-col items-start gap-3">
-        {" "}
-        {/* Footer for stock and button */}
-        {/* Display Available Stock using Badge */}
         <div>
-          {" "}
-          {/* Wrap badge for layout control if needed */}
           <Badge
             variant={isEffectivelyOutOfStock ? "outline" : "secondary"}
             className={cn(
@@ -108,12 +109,13 @@ export function ProductCard({ product }: ProductCardProps) {
               : `${availableStock} available`}
           </Badge>
         </div>
-        {/* Use Shadcn Button component */}
+
+        {/* Keep button outside the main Link wrapper or stop propagation */}
         <Button
           onClick={handleAddToCart}
           disabled={isEffectivelyOutOfStock}
-          className="w-full mt-auto" // Ensure button takes full width
-          variant={isEffectivelyOutOfStock ? "outline" : "default"} // Use different variants
+          className="w-full mt-auto"
+          variant={isEffectivelyOutOfStock ? "outline" : "default"}
         >
           {isEffectivelyOutOfStock ? "Unavailable" : "Add to Cart"}
         </Button>
