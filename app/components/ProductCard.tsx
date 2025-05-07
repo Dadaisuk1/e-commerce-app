@@ -1,15 +1,13 @@
-// src/app/components/ProductCard.tsx
 "use client";
 
 import React from "react";
 import Image from "next/image";
-import Link from "next/link"; // Import Link
+import Link from "next/link";
 import { Product } from "../../app/data";
 import { useCart } from "../../app/hooks/useCart";
-import { formatCurrency } from "../../app/lib/utils";
-import { cn } from "../../app/lib/utils";
+import { formatCurrency, cn } from "../../app/lib/utils";
 
-// Import Shadcn/ui components
+// Shadcn UI
 import { Button } from "../../src/components/ui/button";
 import {
   Card,
@@ -20,6 +18,7 @@ import {
   CardTitle,
 } from "../../src/components/ui/card";
 import { Badge } from "../../src/components/ui/badge";
+import { toast } from "sonner";
 
 interface ProductCardProps {
   product: Product;
@@ -27,31 +26,36 @@ interface ProductCardProps {
 
 export function ProductCard({ product }: ProductCardProps) {
   const { addToCart, cartItems } = useCart();
+
   const quantityInCart =
     cartItems.find((item) => item.id === product.id)?.quantity || 0;
   const availableStock = product.stock - quantityInCart;
   const isEffectivelyOutOfStock = availableStock <= 0;
 
   const handleAddToCart = (event: React.MouseEvent<HTMLButtonElement>) => {
-    // Stop the click from propagating to the Link wrapper if the button is inside it
-    event.stopPropagation();
-    event.preventDefault(); // Prevent default Link behavior if necessary
+    if (isEffectivelyOutOfStock) {
+      toast.error(`Sorry, no more ${product.name} available.`);
+      return;
+    }
 
-    if (!isEffectivelyOutOfStock) {
-      addToCart(product, 1);
-    } else {
-      alert(`Sorry, no more ${product.name} available to add.`);
+    event.stopPropagation();
+    event.preventDefault();
+
+    addToCart(product, 1);
+
+    if (availableStock === 1) {
+      toast("Limited stock warning", {
+        description: "Only 1 item left in stock!",
+        duration: 3000,
+      });
     }
   };
 
-  // Define the product detail page URL
   const productUrl = `/products/${product.id}`;
 
   return (
-    // Wrap the main content area (excluding the button potentially) in a Link
-    <Card className="flex flex-col overflow-hidden h-full transition-shadow hover:shadow-md">
-      <CardHeader className="p-0 relative">
-        {/* Make image link to product page */}
+    <Card className="group flex flex-col overflow-hidden h-full transition-all duration-300 ease-in-out hover:shadow-lg hover:border-primary/30">
+      <CardHeader className="p-0 relative overflow-hidden">
         <Link
           href={productUrl}
           className="block aspect-square relative bg-gray-100"
@@ -61,7 +65,7 @@ export function ProductCard({ product }: ProductCardProps) {
             alt={product.name}
             fill
             style={{ objectFit: "cover" }}
-            className="rounded-t-lg"
+            className="rounded-t-lg transition-transform duration-300 ease-in-out group-hover:scale-105"
             sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, 23vw"
           />
           {product.stock <= 0 && (
@@ -75,45 +79,38 @@ export function ProductCard({ product }: ProductCardProps) {
       </CardHeader>
 
       <CardContent className="p-4 flex-grow">
-        {/* Make title link to product page */}
         <Link href={productUrl}>
-          <CardTitle className="text-lg font-semibold mb-1 truncate hover:text-primary transition-colors">
+          <CardTitle className="text-lg font-semibold mb-1 truncate group-hover:text-primary transition-colors">
             {product.name}
           </CardTitle>
         </Link>
-        <CardDescription className="text-gray-700 mb-2 font-medium">
+        <CardDescription className="text-muted-foreground mb-2 font-medium">
           {formatCurrency(product.price)}
         </CardDescription>
-        <p className="text-sm text-gray-500 mb-4 min-h-[40px] line-clamp-2">
-          {" "}
-          {/* Limit description lines */}
+        <p className="text-sm text-muted-foreground mb-4 min-h-[40px] line-clamp-2">
           {product.description || "No description available."}
         </p>
       </CardContent>
 
       <CardFooter className="p-4 pt-0 flex flex-col items-start gap-3">
-        <div>
-          <Badge
-            variant={isEffectivelyOutOfStock ? "outline" : "secondary"}
-            className={cn(
-              "text-xs font-semibold",
-              isEffectivelyOutOfStock
-                ? "border-red-500 text-red-600"
-                : "text-green-700"
-            )}
-          >
-            {isEffectivelyOutOfStock
-              ? product.stock <= 0
-                ? "Out of Stock"
-                : "None available (in cart)"
-              : `${availableStock} available`}
-          </Badge>
-        </div>
+        <Badge
+          variant={isEffectivelyOutOfStock ? "outline" : "secondary"}
+          className={cn(
+            "text-xs font-semibold",
+            isEffectivelyOutOfStock
+              ? "border-red-500 text-red-600"
+              : "text-green-700"
+          )}
+        >
+          {isEffectivelyOutOfStock
+            ? product.stock <= 0
+              ? "Out of Stock"
+              : "None available (in cart)"
+            : `${availableStock} available`}
+        </Badge>
 
-        {/* Keep button outside the main Link wrapper or stop propagation */}
         <Button
           onClick={handleAddToCart}
-          disabled={isEffectivelyOutOfStock}
           className="w-full mt-auto cursor-pointer"
           variant={isEffectivelyOutOfStock ? "outline" : "default"}
         >
