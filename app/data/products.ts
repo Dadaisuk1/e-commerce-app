@@ -25,7 +25,7 @@ export const sampleProducts: Product[] = [
     name: 'Limited Sneakers',
     price: 120.00,
     imageUrl: '/images/sneakers.jpg',
-    stock: 0,
+    stock: 50,
     description: 'Exclusive limited edition sneakers.',
     category: 'Footwear', // Category added
   },

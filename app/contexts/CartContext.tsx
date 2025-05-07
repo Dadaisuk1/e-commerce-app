@@ -11,6 +11,7 @@ import React, {
   useEffect,
 } from "react";
 import { Product, CartItem } from "../../app/data";
+import { toast } from "sonner";
 
 // Define localStorage keys
 const CART_ITEMS_KEY = "myAppCartItems";
@@ -64,32 +65,18 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   );
   const [discountCode, setDiscountCode] = useState<string | null>(null);
 
-  // --- Effect to save cartItems to localStorage ---
   useEffect(() => {
-    try {
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem(CART_ITEMS_KEY, JSON.stringify(cartItems));
-      }
-    } catch (error) {
-      console.error(`Error writing cartItems to localStorage:`, error);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(CART_ITEMS_KEY, JSON.stringify(cartItems));
     }
   }, [cartItems]);
 
-  // --- Effect to save savedItems to localStorage ---
   useEffect(() => {
-    try {
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem(
-          SAVED_ITEMS_KEY,
-          JSON.stringify(savedItems)
-        );
-      }
-    } catch (error) {
-      console.error(`Error writing savedItems to localStorage:`, error);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(SAVED_ITEMS_KEY, JSON.stringify(savedItems));
     }
   }, [savedItems]);
 
-  // --- Core Cart Logic ---
   const addToCart = useCallback(
     (product: Product, quantity: number) => {
       const existingCartItem = cartItems.find((item) => item.id === product.id);
@@ -97,7 +84,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
       const potentialTotalQuantity = currentQuantityInCart + quantity;
 
       if (product.stock < potentialTotalQuantity) {
-        alert(
+        toast.error(
           `Sorry, only ${product.stock} of ${product.name} available in total.`
         );
         return;
@@ -106,12 +93,14 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
       setCartItems((prevItems) => {
         const existingItem = prevItems.find((item) => item.id === product.id);
         if (existingItem) {
+          toast.success(`${product.name} quantity updated in cart.`);
           return prevItems.map((item) =>
             item.id === product.id
               ? { ...item, quantity: item.quantity + quantity }
               : item
           );
         } else {
+          toast.success(`${product.name} added to cart.`);
           return [...prevItems, { ...product, quantity }];
         }
       });
@@ -123,6 +112,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     setCartItems((prevItems) =>
       prevItems.filter((item) => item.id !== productId)
     );
+    toast.info("Item removed from cart.");
   }, []);
 
   const updateQuantity = useCallback(
@@ -130,14 +120,17 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
       setCartItems((prevItems) => {
         const itemToUpdate = prevItems.find((item) => item.id === productId);
         if (!itemToUpdate) return prevItems;
+
         if (newQuantity <= 0) {
+          toast.info(`${itemToUpdate.name} removed from cart.`);
           return prevItems.filter((item) => item.id !== productId);
         } else if (newQuantity > itemToUpdate.stock) {
-          alert(
+          toast.error(
             `Sorry, only ${itemToUpdate.stock} of ${itemToUpdate.name} available.`
           );
           return prevItems;
         } else {
+          toast.success(`${itemToUpdate.name} quantity updated.`);
           return prevItems.map((item) =>
             item.id === productId ? { ...item, quantity: newQuantity } : item
           );
@@ -151,20 +144,19 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     setCartItems([]);
     setSavedItems([]);
     setDiscountCode(null);
-    console.log("Cart and Saved Items cleared");
+    toast.success("Cart and saved items cleared.");
   }, []);
 
   const applyDiscount = useCallback((code: string) => {
     if (code.toUpperCase() === "SAVE10") {
       setDiscountCode("SAVE10");
-      alert("Discount SAVE10 applied!");
+      toast.success("You saved 10% using SAVE10.");
     } else {
-      alert("Invalid discount code.");
       setDiscountCode(null);
+      toast.error("The discount code you entered is not valid.");
     }
   }, []);
 
-  // --- Save for Later Logic ---
   const saveForLater = useCallback(
     (productId: string) => {
       const itemToSave = cartItems.find((item) => item.id === productId);
@@ -172,6 +164,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
         setCartItems((prev) => prev.filter((item) => item.id !== productId));
         setSavedItems((prev) => {
           if (prev.some((saved) => saved.id === productId)) return prev;
+          toast("Item saved for later.");
           return [...prev, itemToSave];
         });
       }
@@ -190,23 +183,26 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
           currentQuantityInCart + itemToMove.quantity;
 
         if (itemToMove.stock < potentialTotalQuantity) {
-          alert(
+          toast.error(
             `Cannot move ${itemToMove.name} back to cart. Only ${itemToMove.stock} available in total.`
           );
           return;
         }
+
         setSavedItems((prev) => prev.filter((item) => item.id !== productId));
         setCartItems((prevCart) => {
           const existingCartItem = prevCart.find(
             (cartItem) => cartItem.id === productId
           );
           if (existingCartItem) {
+            toast.success(`${itemToMove.name} quantity increased in cart.`);
             return prevCart.map((item) =>
               item.id === productId
                 ? { ...item, quantity: item.quantity + itemToMove.quantity }
                 : item
             );
           } else {
+            toast.success(`${itemToMove.name} moved to cart.`);
             return [...prevCart, itemToMove];
           }
         });
@@ -217,9 +213,9 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
   const removeFromSaved = useCallback((productId: string) => {
     setSavedItems((prev) => prev.filter((item) => item.id !== productId));
+    toast.info("Item removed from saved items.");
   }, []);
 
-  // --- Calculated Values ---
   const subtotal = useMemo(() => {
     return cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   }, [cartItems]);
@@ -233,7 +229,6 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     return subtotal - discountAmount;
   }, [subtotal, discountAmount]);
 
-  // --- Context Value ---
   const value = useMemo(
     () => ({
       cartItems,
@@ -272,7 +267,6 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 };
 
-// Custom hook to access cart context
 export const useCart = (): CartContextType => {
   const context = useContext(CartContext);
   if (context === undefined) {

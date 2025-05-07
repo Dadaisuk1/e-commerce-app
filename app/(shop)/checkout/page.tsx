@@ -2,18 +2,20 @@
 "use client";
 
 import React, { useState, FormEvent, useEffect } from "react";
-import { useCart } from "../../../app/hooks/useCart";
-import { useAuth } from "../../../app/hooks/useAuth";
-import { useOrders } from "../../../app/hooks/useOrders";
+// import Link from "next/link";
+import { useCart } from "../../hooks/useCart";
+import { useAuth } from "../../hooks/useAuth";
+import { useOrders } from "../../hooks/useOrders";
 import { useRouter } from "next/navigation";
-import { formatCurrency } from ".././../../app/lib/utils";
-import { cn } from "../../lib/utils";
+import { formatCurrency } from "../../lib/utils";
+// import { cn } from "@/app/lib/utils";
+import { sampleProducts } from "../../../app/data/products"; // Import sampleProducts to check stock
 
 // Import Shadcn/ui components
 import { Button } from "../../../src/components/ui/button";
-import { Input } from "../../../src//components/ui/input";
-import { Label } from "../../../src//components/ui/label";
-import { Checkbox } from "../../../src//components/ui/checkbox";
+import { Input } from "../../../src/components/ui/input";
+import { Label } from "../../../src/components/ui/label";
+import { Checkbox } from "../../../src/components/ui/checkbox";
 import {
   Card,
   CardContent,
@@ -23,6 +25,12 @@ import {
   CardTitle,
 } from "../../../src/components/ui/card";
 import { Separator } from "../../../src/components/ui/separator";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "../../../src/components/ui/alert";
+import { AlertTriangle } from "lucide-react"; // Icon for alert
 
 // Reusable Shadcn Form Field Component
 const ShadcnFormField = ({
@@ -45,7 +53,7 @@ const ShadcnFormField = ({
       value={value}
       onChange={onChange}
       autoComplete={autoComplete}
-      placeholder={label} // Use label as placeholder for simplicity
+      placeholder={label}
       disabled={disabled}
     />
   </div>
@@ -64,7 +72,6 @@ export default function CheckoutPage() {
   const { placeOrder } = useOrders();
   const router = useRouter();
 
-  // State for form fields
   const [billingAddress, setBillingAddress] = useState({
     firstName: "",
     lastName: "",
@@ -84,38 +91,33 @@ export default function CheckoutPage() {
   const [useBillingForShipping, setUseBillingForShipping] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-
-  // Pre-fill email if user is logged in
   const [email, setEmail] = useState(currentUser?.email || "");
 
-  // Handle form input changes
   const handleBillingChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setBillingAddress((prev) => ({ ...prev, [name]: value }));
-    // Use a functional update for shipping if checkbox is checked to ensure latest billing state
     if (useBillingForShipping) {
       setShippingAddress((prevBilling) => ({ ...prevBilling, [name]: value }));
     }
   };
-
   const handleShippingChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setShippingAddress({ ...shippingAddress, [e.target.name]: e.target.value });
   };
-
-  // Handle checkbox change using Shadcn's onCheckedChange prop
   const handleCheckboxCheckedChange = (checked: boolean | "indeterminate") => {
-    const isChecked = !!checked; // Convert 'indeterminate' to false
+    const isChecked = !!checked;
     setUseBillingForShipping(isChecked);
     if (isChecked) {
-      setShippingAddress({ ...billingAddress }); // Copy billing to shipping
+      setShippingAddress({ ...billingAddress });
     }
   };
 
+  // --- Updated handleSubmit with Inventory Check ---
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
     setError(null);
     setIsLoading(true);
 
+    // --- Basic Form Validation ---
     const finalShippingAddress = useBillingForShipping
       ? billingAddress
       : shippingAddress;
@@ -134,15 +136,39 @@ export default function CheckoutPage() {
       setIsLoading(false);
       return;
     }
-
     if (cartItems.length === 0) {
       setError("Your cart is empty.");
       setIsLoading(false);
       return;
     }
+    // --- End Basic Form Validation ---
 
-    console.log("Submitting order...");
+    // --- Final Inventory Check ---
+    let inventoryError = null;
+    for (const cartItem of cartItems) {
+      // Find the current stock level from our mock data
+      // In a real app, this would be an API call to check live inventory
+      const currentProductData = sampleProducts.find(
+        (p) => p.id === cartItem.id
+      );
+      const currentStock = currentProductData?.stock ?? 0; // Default to 0 if product not found
 
+      if (cartItem.quantity > currentStock) {
+        // Found an item with insufficient stock
+        inventoryError = `Insufficient stock for ${cartItem.name}. Only ${currentStock} available, but you have ${cartItem.quantity} in cart. Please adjust your cart.`;
+        break; // Stop checking on first error
+      }
+    }
+
+    if (inventoryError) {
+      setError(inventoryError); // Set the specific inventory error message
+      setIsLoading(false);
+      return; // Prevent checkout
+    }
+    // --- End Final Inventory Check ---
+
+    // --- Proceed if Inventory Check Passed ---
+    console.log("Inventory check passed. Submitting order...");
     try {
       const newOrder = placeOrder(
         cartItems,
@@ -160,15 +186,14 @@ export default function CheckoutPage() {
       setIsLoading(false);
     }
   };
+  // --- End Updated handleSubmit ---
 
-  // Redirect if cart is empty (client-side effect)
   useEffect(() => {
     if (cartItems.length === 0 && !isLoading) {
       router.replace("/cart");
     }
   }, [cartItems, isLoading, router]);
 
-  // Render null or loading indicator while redirecting or if cart is empty initially
   if (cartItems.length === 0 && !isLoading) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
@@ -180,7 +205,6 @@ export default function CheckoutPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6">Checkout</h1>
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Checkout Form Card */}
         <Card className="lg:col-span-2">
@@ -188,6 +212,14 @@ export default function CheckoutPage() {
             <CardTitle>Shipping & Billing Information</CardTitle>
           </CardHeader>
           <CardContent>
+            {/* Display Error Alert */}
+            {error && (
+              <Alert variant="destructive" className="mb-6">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Checkout Error</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
             <form onSubmit={handleSubmit} className="space-y-8">
               {/* Contact Info */}
               <section>
@@ -269,21 +301,20 @@ export default function CheckoutPage() {
                   Shipping Address
                 </h3>
                 <div className="flex items-center space-x-2 mb-4">
-                  {/* Use Shadcn Checkbox */}
                   <Checkbox
                     id="useBillingForShipping"
                     checked={useBillingForShipping}
-                    onCheckedChange={handleCheckboxCheckedChange} // Use onCheckedChange
+                    onCheckedChange={handleCheckboxCheckedChange}
                     disabled={isLoading}
                   />
                   <Label
                     htmlFor="useBillingForShipping"
                     className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                   >
-                    Same as billing address
+                    {" "}
+                    Same as billing address{" "}
                   </Label>
                 </div>
-
                 {!useBillingForShipping && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <ShadcnFormField
@@ -344,21 +375,15 @@ export default function CheckoutPage() {
                   Payment
                 </h3>
                 <Card className="bg-muted/40">
-                  {" "}
-                  {/* Use muted background */}
                   <CardContent className="p-4 text-sm text-muted-foreground">
                     <p>This is a prototype. No real payment is required.</p>
                     <p>
                       Clicking &apos;Place Order&apos; will simulate a
-                      successful order.
+                      successful order if stock is available.
                     </p>
                   </CardContent>
                 </Card>
               </section>
-
-              {error && (
-                <p className="text-sm text-red-600 font-medium">{error}</p>
-              )}
 
               {/* Submit Button */}
               <div className="pt-6">
@@ -366,7 +391,7 @@ export default function CheckoutPage() {
                   type="submit"
                   disabled={isLoading}
                   size="lg"
-                  className="w-full cursor-pointer"
+                  className="w-full"
                 >
                   {isLoading ? "Placing Order..." : "Place Order"}
                 </Button>
@@ -379,32 +404,33 @@ export default function CheckoutPage() {
         <div className="lg:col-span-1">
           <Card className="lg:sticky lg:top-24">
             <CardHeader>
-              <CardTitle>Order Summary</CardTitle>
+              {" "}
+              <CardTitle>Order Summary</CardTitle>{" "}
             </CardHeader>
             <CardContent>
-              {/* Display Cart Items Mini */}
               <div className="space-y-3 max-h-60 overflow-y-auto mb-4 pr-2 text-sm">
                 {cartItems.map((item) => (
                   <div
                     key={item.id}
                     className="flex justify-between items-start"
                   >
+                    {" "}
                     <div className="flex items-center space-x-2 mr-2">
-                      {/* Optional: Small image */}
-                      {/* <div className="relative w-8 h-8 bg-gray-100 rounded overflow-hidden flex-shrink-0">...</div> */}
-                      <span className="font-medium">{item.quantity} x</span>
+                      {" "}
+                      <span className="font-medium">
+                        {item.quantity} x
+                      </span>{" "}
                       <span className="flex-shrink-1 break-words">
                         {item.name}
-                      </span>
-                    </div>
+                      </span>{" "}
+                    </div>{" "}
                     <span className="text-right flex-shrink-0">
                       {formatCurrency(item.price * item.quantity)}
-                    </span>
+                    </span>{" "}
                   </div>
                 ))}
               </div>
               <Separator className="my-4" />
-              {/* Totals */}
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span>Subtotal:</span>
@@ -418,7 +444,7 @@ export default function CheckoutPage() {
                 )}
                 <div className="flex justify-between">
                   <span>Shipping:</span>
-                  <span>FREE</span> {/* Placeholder */}
+                  <span>FREE</span>
                 </div>
                 <Separator className="my-2" />
                 <div className="flex justify-between font-bold text-base">
