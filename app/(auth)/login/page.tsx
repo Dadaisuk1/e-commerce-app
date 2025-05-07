@@ -9,7 +9,7 @@ import { useRouter } from "next/navigation";
 // Import Shadcn/ui components
 import { Button } from "../../../src/components/ui/button";
 import { Input } from "../../../src/components/ui/input";
-import { Label } from "../../../src/components/ui/label"; // Use Label for accessibility
+import { Label } from "../../../src/components/ui/label";
 import {
   Card,
   CardContent,
@@ -17,44 +17,50 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "../../../src/components/ui/card"; // Use Card for layout
+} from "../../../src/components/ui/card";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false); // Add loading state
+  const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
   const router = useRouter();
 
-  const handleSubmit = (event: FormEvent) => {
+  // --- Updated handleSubmit ---
+  const handleSubmit = async (event: FormEvent) => {
+    // Make async
     event.preventDefault();
     setError(null);
-    setIsLoading(true); // Set loading true
 
     if (!email || !password) {
       setError("Please enter both email and password.");
-      setIsLoading(false); // Reset loading
-      return;
+      return; // No need to set loading if validation fails here
     }
 
+    setIsLoading(true); // Set loading before async call
+
     try {
-      login(email, password);
-      // Simulate async operation if needed, otherwise redirect immediately
-      // Since login is synchronous in simulation:
-      console.log("Redirecting to homepage after simulated login...");
-      router.push("/");
-    } catch (err) {
-      console.error("Login error (simulated catch):", err);
-      setError("Login failed. Please check your credentials.");
-      setIsLoading(false); // Reset loading on error
+      await login(email, password); // Call the async login function
+      console.log("Redirecting to homepage after successful login...");
+      router.push("/"); // Redirect on success
+      // No need to reset loading here as we are navigating away
+    } catch (err: any) {
+      // Catch the error
+      console.error("Login error:", err);
+      // Set specific error message based on error type/message
+      if (err.name === "InvalidCredentialsError") {
+        setError(err.message); // Use the message from the custom error
+      } else {
+        setError("An unexpected error occurred during login."); // Generic fallback
+      }
+      setIsLoading(false); // Reset loading only on error
     }
-    // No need to reset loading here if redirecting on success
   };
+  // --- End Updated handleSubmit ---
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100 px-4">
-      {/* Use Shadcn Card for styling the form container */}
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">Login to MyStore</CardTitle>
@@ -63,9 +69,7 @@ export default function LoginPage() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              {/* Use Shadcn Label */}
               <Label htmlFor="email">Email address</Label>
-              {/* Use Shadcn Input */}
               <Input
                 id="email"
                 name="email"
@@ -75,7 +79,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
-                disabled={isLoading} // Disable input while loading
+                disabled={isLoading}
               />
             </div>
 
@@ -90,25 +94,23 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Password"
-                disabled={isLoading} // Disable input while loading
+                disabled={isLoading}
               />
             </div>
 
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && (
+              // Display the error message from state
+              <p className="text-sm font-medium text-destructive">{error}</p>
+            )}
 
-            {/* Use Shadcn Button */}
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={isLoading} // Disable button while loading
-            >
+            <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? "Signing in..." : "Sign in"}
             </Button>
           </form>
         </CardContent>
         <CardFooter className="flex justify-center text-sm">
           <p className="text-gray-600">
-            Don&apos;t have an account?{" "}
+            Don't have an account?{" "}
             <Link
               href="/register"
               className="font-medium text-blue-600 hover:text-blue-500 hover:underline"
