@@ -4,9 +4,10 @@ import { Inter } from "next/font/google";
 import "./globals.css"; // Import global styles
 
 // Import Providers
-import { AuthProvider } from "./contexts/AuthContext";
-import { CartProvider } from "./contexts/CartContext";
-import { OrderProvider } from "./contexts/OrderContext"; // Import OrderProvider
+import { AuthProvider } from "../app/contexts/AuthContext";
+import { CartProvider } from "../app/contexts/CartContext";
+import { OrderProvider } from "../app/contexts/OrderContext";
+import { Toaster } from "sonner"; // ✅ Updated to use sonner
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -23,14 +24,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        {/* Wrap the entire application body with the providers */}
-        {/* Order matters if contexts depend on each other */}
         <AuthProvider>
           <CartProvider>
             <OrderProvider>
-              {" "}
-              {/* Add OrderProvider here */}
               {children}
+              <Toaster /> {/* ✅ Updated Toaster from sonner */}
             </OrderProvider>
           </CartProvider>
         </AuthProvider>

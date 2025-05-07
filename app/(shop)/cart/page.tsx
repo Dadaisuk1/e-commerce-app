@@ -5,14 +5,12 @@ import Link from "next/link";
 import { useCart } from "../../../app/hooks/useCart";
 import { useAuth } from "../../../app/hooks/useAuth";
 import { useRouter } from "next/navigation";
-import { CartItem } from "../../../app/components/CartItem"; // Import the updated CartItem component
-import { formatCurrency } from "../../../app/lib/utils";
-import { cn } from "../../../app/lib/utils";
+import { CartItem } from "../../../app/components/CartItem";
+import { formatCurrency, cn } from "../../../app/lib/utils";
 import { buttonVariants } from "../../../src/components/ui/button";
 
-// Import Shadcn/ui components
-import { Button } from "../../../src/components/ui/button";
-import { Input } from "../../../src/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Card,
   CardContent,
@@ -20,9 +18,9 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "../../../src/components/ui/card";
-import { Separator } from "../../../src/components/ui/separator";
-import { Label } from "../../../src/components/ui/label";
+} from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Label } from "@/components/ui/label";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,12 +30,12 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "../../../src/components/ui/alert-dialog";
+} from "@/components/ui/alert-dialog";
 
 export default function CartPage() {
   const {
     cartItems,
-    savedItems, // Get savedItems from context
+    savedItems,
     subtotal,
     discountAmount,
     total,
@@ -45,19 +43,15 @@ export default function CartPage() {
     discountCode,
     clearCart,
   } = useCart();
+
   const { currentUser } = useAuth();
   const router = useRouter();
   const [couponInput, setCouponInput] = useState("");
   const [showLoginAlert, setShowLoginAlert] = useState(false);
+  const [showClearDialog, setShowClearDialog] = useState(false);
 
   const handleApplyCoupon = () => {
     applyDiscount(couponInput);
-  };
-
-  const handleClearCart = () => {
-    if (confirm("Are you sure you want to clear your cart?")) {
-      clearCart();
-    }
   };
 
   const handleProceedToCheckout = () => {
@@ -73,7 +67,6 @@ export default function CartPage() {
   };
 
   if (cartItems.length === 0 && savedItems.length === 0) {
-    // Check both lists for empty state
     return (
       <div className="container mx-auto px-4 py-16 text-center">
         <Card className="max-w-lg mx-auto">
@@ -82,7 +75,7 @@ export default function CartPage() {
               Your Cart is Empty
             </CardTitle>
             <CardDescription className="text-gray-600 pt-2">
-              Looks like you haven&aptos;t added anything yet.
+              Looks like you haven’t added anything yet.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -97,28 +90,23 @@ export default function CartPage() {
 
   return (
     <>
-      {" "}
-      {/* Use Fragment to allow AlertDialog sibling */}
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mb-6">Shopping Cart</h1>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content Area (Cart Items + Saved Items) */}
+          {/* Cart Items + Saved Items */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Active Cart Items Section */}
             {cartItems.length > 0 && (
               <div>
-                {/* Optional: Add a heading like "Items in Cart" */}
-                {/* <h2 className="text-xl font-semibold mb-3">Items in Cart</h2> */}
-                <div className="space-y-4">
+                <div className="space-y-4 cursor-default">
                   {cartItems.map((item) => (
                     <CartItem key={item.id} item={item} isSavedItem={false} />
                   ))}
                 </div>
                 <div className="text-right mt-4">
                   <Button
-                    onClick={handleClearCart}
                     variant="link"
-                    className="text-sm text-red-600 hover:text-red-700 h-auto p-0"
+                    className="text-sm text-red-600 hover:text-red-700 h-auto p-0 cursor-pointer"
+                    onClick={() => setShowClearDialog(true)}
                   >
                     Clear Cart
                   </Button>
@@ -126,12 +114,10 @@ export default function CartPage() {
               </div>
             )}
 
-            {/* Separator if both sections have items */}
             {cartItems.length > 0 && savedItems.length > 0 && (
               <Separator className="my-8" />
             )}
 
-            {/* Saved For Later Section */}
             {savedItems.length > 0 && (
               <div>
                 <h2 className="text-xl font-semibold mb-3">
@@ -139,7 +125,6 @@ export default function CartPage() {
                 </h2>
                 <div className="space-y-4">
                   {savedItems.map((item) => (
-                    // Render CartItem component with isSavedItem={true}
                     <CartItem key={item.id} item={item} isSavedItem={true} />
                   ))}
                 </div>
@@ -147,9 +132,8 @@ export default function CartPage() {
             )}
           </div>
 
-          {/* Order Summary Card */}
+          {/* Order Summary */}
           <div className="lg:col-span-1">
-            {/* Only show summary if there are items in the active cart */}
             {cartItems.length > 0 ? (
               <Card className="lg:sticky lg:top-24">
                 <CardHeader>
@@ -158,7 +142,6 @@ export default function CartPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {/* Totals */}
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span>Subtotal:</span>
@@ -177,7 +160,6 @@ export default function CartPage() {
                     <span>{formatCurrency(total)}</span>
                   </div>
                   <Separator />
-                  {/* Discount Code Input */}
                   <div className="space-y-2 pt-2">
                     <Label
                       htmlFor="discount-code"
@@ -203,7 +185,7 @@ export default function CartPage() {
                       <Button
                         onClick={handleApplyCoupon}
                         disabled={!!discountCode || !couponInput}
-                        className="rounded-l-none"
+                        className="rounded-l-none cursor-pointer"
                         variant="secondary"
                       >
                         Apply
@@ -217,15 +199,13 @@ export default function CartPage() {
                   </div>
                 </CardContent>
                 <CardFooter className="flex flex-col gap-4">
-                  {/* Checkout Button */}
                   <Button
                     onClick={handleProceedToCheckout}
                     size="lg"
-                    className="w-full"
+                    className="w-full cursor-pointer"
                   >
                     Proceed to Checkout
                   </Button>
-
                   <Link
                     href="/"
                     className={cn(
@@ -238,7 +218,6 @@ export default function CartPage() {
                 </CardFooter>
               </Card>
             ) : (
-              // Optionally show a message if only saved items exist
               <Card className="lg:sticky lg:top-24 border-dashed">
                 <CardContent className="p-6 text-center text-muted-foreground">
                   Your active cart is empty. Add items or move saved items to
@@ -249,20 +228,40 @@ export default function CartPage() {
           </div>
         </div>
       </div>
-      {/* Login Alert Dialog */}
+
+      {/* Login Alert */}
       <AlertDialog open={showLoginAlert} onOpenChange={setShowLoginAlert}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Login Required</AlertDialogTitle>
             <AlertDialogDescription>
-              You need to be logged in to proceed to checkout. Please log in or
-              create an account.
+              You need to be logged in to proceed to checkout.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleGoToLogin}>
               Go to Login
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Clear Cart Confirm Dialog */}
+      <AlertDialog open={showClearDialog} onOpenChange={setShowClearDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove all items from your cart.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="cursor-pointer">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={clearCart} className="cursor-pointer">
+              Clear Cart
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

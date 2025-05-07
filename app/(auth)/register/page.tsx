@@ -18,6 +18,13 @@ import {
   CardHeader,
   CardTitle,
 } from "../../../src/components/ui/card";
+// Import Alert components
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "../../../src/components/ui/alert";
+import { AlertTriangle } from "lucide-react"; // Import an icon for the alert
 
 export default function RegisterPage() {
   const [email, setEmail] = useState("");
@@ -28,11 +35,9 @@ export default function RegisterPage() {
   const { register } = useAuth();
   const router = useRouter();
 
-  // --- Updated handleSubmit ---
   const handleSubmit = async (event: FormEvent) => {
-    // Make async
     event.preventDefault();
-    setError(null);
+    setError(null); // Clear previous errors first
 
     // Frontend validation first
     if (!email || !password || !confirmPassword) {
@@ -48,26 +53,22 @@ export default function RegisterPage() {
       return;
     }
 
-    setIsLoading(true); // Set loading before async call
+    setIsLoading(true);
 
     try {
-      await register(email, password); // Call the async register function
+      await register(email, password);
       console.log("Redirecting to homepage after successful registration...");
-      router.push("/"); // Redirect on success
-      // No need to reset loading here
+      router.push("/");
     } catch (err: any) {
-      // Catch the error
       console.error("Registration error:", err);
-      // Set specific error message based on error type/message
       if (err.name === "EmailExistsError") {
-        setError(err.message); // Use message from custom error
+        setError(err.message);
       } else {
-        setError("An unexpected error occurred during registration."); // Generic fallback
+        setError("An unexpected error occurred during registration.");
       }
-      setIsLoading(false); // Reset loading only on error
+      setIsLoading(false);
     }
   };
-  // --- End Updated handleSubmit ---
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100 px-4">
@@ -81,7 +82,19 @@ export default function RegisterPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Display Alert component when there's an error */}
+          {error && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertTriangle className="h-4 w-4" /> {/* Error Icon */}
+              <AlertTitle>Registration Failed</AlertTitle>
+              <AlertDescription>
+                {error} {/* Display the error message */}
+              </AlertDescription>
+            </Alert>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Input fields remain the same */}
             <div className="space-y-2">
               <Label htmlFor="email">Email address</Label>
               <Input
@@ -127,10 +140,7 @@ export default function RegisterPage() {
               />
             </div>
 
-            {error && (
-              // Display the error message from state
-              <p className="text-sm font-medium text-destructive">{error}</p> // Use text-destructive for Shadcn error color
-            )}
+            {/* Removed the old <p> tag for error display */}
 
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? "Registering..." : "Register"}

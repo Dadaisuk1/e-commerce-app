@@ -49,7 +49,7 @@ export default function OrderHistoryPage() {
       {sortedOrders.length === 0 ? (
         <div className="text-center py-12 bg-white rounded-lg shadow-sm border">
           <p className="text-gray-600 mb-4">
-            You haven't placed any orders yet.
+            You haven&apos;t placed any orders yet.
           </p>
           <Button asChild>
             <Link href="/">Start Shopping</Link>
