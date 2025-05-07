@@ -2,20 +2,20 @@
 "use client";
 
 import React, { useState, FormEvent, useEffect } from "react";
-// import Link from "next/link";
-import { useCart } from "../../hooks/useCart";
-import { useAuth } from "../../hooks/useAuth";
-import { useOrders } from "../../hooks/useOrders";
+// import Link from 'next/link'; // Link is not used directly on this page anymore
+import { useCart } from "../../../app/hooks/useCart"; // Corrected import path
+import { useAuth } from "../../../app/hooks/useAuth"; // Corrected import path
+import { useOrders } from "../../../app/hooks/useOrders"; // Corrected import path
 import { useRouter } from "next/navigation";
-import { formatCurrency } from "../../lib/utils";
-// import { cn } from "@/app/lib/utils";
-import { sampleProducts } from "../../../app/data/products"; // Import sampleProducts to check stock
+import { formatCurrency } from "../../../app/lib/utils";
+import { sampleProducts } from "../../../app/data/products";
 
 // Import Shadcn/ui components
 import { Button } from "../../../src/components/ui/button";
 import { Input } from "../../../src/components/ui/input";
 import { Label } from "../../../src/components/ui/label";
 import { Checkbox } from "../../../src/components/ui/checkbox";
+
 import {
   Card,
   CardContent,
@@ -23,16 +23,17 @@ import {
   // CardFooter,
   CardHeader,
   CardTitle,
-} from "../../../src/components/ui/card";
-import { Separator } from "../../../src/components/ui/separator";
+} from "../../../src/components/ui/card"; // Corrected import path
+import { Separator } from "../../../src/components/ui/separator"; // Corrected import path
 import {
   Alert,
   AlertDescription,
   AlertTitle,
-} from "../../../src/components/ui/alert";
+} from "../../../src/components/ui/alert"; // Corrected import path
 import { AlertTriangle } from "lucide-react"; // Icon for alert
 
 // Reusable Shadcn Form Field Component
+// (Ensure props type checking if desired, e.g., using React.FC or defining prop types)
 const ShadcnFormField = ({
   id,
   label,
@@ -55,6 +56,7 @@ const ShadcnFormField = ({
       autoComplete={autoComplete}
       placeholder={label}
       disabled={disabled}
+      className="cursor-pointer" // Added cursor-pointer based on user code, review if needed
     />
   </div>
 );
@@ -146,24 +148,21 @@ export default function CheckoutPage() {
     // --- Final Inventory Check ---
     let inventoryError = null;
     for (const cartItem of cartItems) {
-      // Find the current stock level from our mock data
-      // In a real app, this would be an API call to check live inventory
       const currentProductData = sampleProducts.find(
         (p) => p.id === cartItem.id
       );
-      const currentStock = currentProductData?.stock ?? 0; // Default to 0 if product not found
+      const currentStock = currentProductData?.stock ?? 0;
 
       if (cartItem.quantity > currentStock) {
-        // Found an item with insufficient stock
         inventoryError = `Insufficient stock for ${cartItem.name}. Only ${currentStock} available, but you have ${cartItem.quantity} in cart. Please adjust your cart.`;
-        break; // Stop checking on first error
+        break;
       }
     }
 
     if (inventoryError) {
-      setError(inventoryError); // Set the specific inventory error message
+      setError(inventoryError);
       setIsLoading(false);
-      return; // Prevent checkout
+      return;
     }
     // --- End Final Inventory Check ---
 
@@ -377,6 +376,7 @@ export default function CheckoutPage() {
                 <Card className="bg-muted/40">
                   <CardContent className="p-4 text-sm text-muted-foreground">
                     <p>This is a prototype. No real payment is required.</p>
+                    {/* Corrected apostrophe */}
                     <p>
                       Clicking &apos;Place Order&apos; will simulate a
                       successful order if stock is available.
@@ -391,8 +391,10 @@ export default function CheckoutPage() {
                   type="submit"
                   disabled={isLoading}
                   size="lg"
-                  className="w-full"
+                  className="w-full cursor-pointer"
                 >
+                  {" "}
+                  {/* Added cursor-pointer based on user code */}
                   {isLoading ? "Placing Order..." : "Place Order"}
                 </Button>
               </div>
@@ -453,6 +455,8 @@ export default function CheckoutPage() {
                 </div>
               </div>
             </CardContent>
+            {/* CardFooter was missing in user's provided code for this section, added back if needed */}
+            {/* <CardFooter> ... </CardFooter> */}
           </Card>
         </div>
       </div>
