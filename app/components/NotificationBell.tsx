@@ -58,7 +58,7 @@ export default function NotificationBell() {
         <Button
           variant="ghost"
           size="icon"
-          className="relative"
+          className="relative cursor-pointer"
           aria-label={`Notifications (${unreadCount} unread)`}
         >
           <Bell className="h-5 w-5 text-muted-foreground group-hover:text-foreground" />

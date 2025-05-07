@@ -24,50 +24,53 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false); // Add loading state
+  const [isLoading, setIsLoading] = useState(false);
   const { register } = useAuth();
   const router = useRouter();
 
-  const handleSubmit = (event: FormEvent) => {
+  // --- Updated handleSubmit ---
+  const handleSubmit = async (event: FormEvent) => {
+    // Make async
     event.preventDefault();
     setError(null);
-    setIsLoading(true); // Set loading true
 
+    // Frontend validation first
     if (!email || !password || !confirmPassword) {
       setError("Please fill in all fields.");
-      setIsLoading(false); // Reset loading
       return;
     }
-
     if (password !== confirmPassword) {
       setError("Passwords do not match.");
-      setIsLoading(false); // Reset loading
       return;
     }
-
-    // Basic password strength check (example)
     if (password.length < 6) {
       setError("Password must be at least 6 characters long.");
-      setIsLoading(false);
       return;
     }
 
+    setIsLoading(true); // Set loading before async call
+
     try {
-      register(email, password);
-      // Since register is synchronous in simulation:
-      console.log("Redirecting to homepage after simulated registration...");
-      router.push("/");
-    } catch (err) {
-      console.error("Registration error (simulated catch):", err);
-      setError("Registration failed. Please try again.");
-      setIsLoading(false); // Reset loading on error
+      await register(email, password); // Call the async register function
+      console.log("Redirecting to homepage after successful registration...");
+      router.push("/"); // Redirect on success
+      // No need to reset loading here
+    } catch (err: any) {
+      // Catch the error
+      console.error("Registration error:", err);
+      // Set specific error message based on error type/message
+      if (err.name === "EmailExistsError") {
+        setError(err.message); // Use message from custom error
+      } else {
+        setError("An unexpected error occurred during registration."); // Generic fallback
+      }
+      setIsLoading(false); // Reset loading only on error
     }
-    // No need to reset loading here if redirecting on success
   };
+  // --- End Updated handleSubmit ---
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100 px-4">
-      {/* Use Shadcn Card for styling the form container */}
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">
@@ -124,7 +127,10 @@ export default function RegisterPage() {
               />
             </div>
 
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && (
+              // Display the error message from state
+              <p className="text-sm font-medium text-destructive">{error}</p> // Use text-destructive for Shadcn error color
+            )}
 
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? "Registering..." : "Register"}
