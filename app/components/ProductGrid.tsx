@@ -41,7 +41,7 @@ export function ProductGrid({ allProducts }: ProductGridProps) {
         <div className="text-center py-10 text-gray-500 col-span-full">
           {" "}
           {/* Ensure message spans grid if needed */}
-          <p>No products found matching "{searchTerm}".</p>
+          <p>No products found matching &aptos;{searchTerm}&aptos;.</p>
         </div>
       )}
     </>

@@ -60,7 +60,7 @@ export function ProductCard({ product }: ProductCardProps) {
             src={product.imageUrl || "/images/placeholder.svg"}
             alt={product.name}
             fill
-            style={{ objectFit: "contain" }}
+            style={{ objectFit: "cover" }}
             className="rounded-t-lg"
             sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, 23vw"
           />

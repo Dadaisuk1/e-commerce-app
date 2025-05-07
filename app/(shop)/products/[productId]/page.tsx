@@ -91,8 +91,8 @@ export default function ProductDetailPage() {
           Product Not Found
         </h1>
         <p className="text-gray-600 mb-8">
-          Sorry, we couldn&aptos;t find the product you&aptos;re looking for
-          (ID: {productId || "N/A"}).
+          Sorry, we couldn&apos;t find the product you&apos;re looking for (ID:{" "}
+          {productId || "N/A"}).
         </p>
         <Button asChild>
           <Link href="/">Go Back to Shop</Link>

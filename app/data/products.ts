@@ -6,7 +6,7 @@ export const sampleProducts: Product[] = [
     id: 'prod1',
     name: 'Stylish T-Shirt',
     price: 25.99,
-    imageUrl: '/images/placeholder.svg',
+    imageUrl: '/images/shirt.png',
     stock: 10,
     description: 'A cool t-shirt.',
     category: 'Clothing', // Category added
@@ -15,7 +15,7 @@ export const sampleProducts: Product[] = [
     id: 'prod2',
     name: 'Comfortable Jeans',
     price: 59.99,
-    imageUrl: '/images/placeholder.svg',
+    imageUrl: '/images/jeans.jpg',
     stock: 5,
     description: 'Great pair of jeans.',
     category: 'Clothing', // Category added
@@ -24,7 +24,7 @@ export const sampleProducts: Product[] = [
     id: 'prod3',
     name: 'Limited Sneakers',
     price: 120.00,
-    imageUrl: '/images/placeholder.svg',
+    imageUrl: '/images/sneakers.jpg',
     stock: 0,
     description: 'Exclusive limited edition sneakers.',
     category: 'Footwear', // Category added
@@ -33,7 +33,7 @@ export const sampleProducts: Product[] = [
     id: 'prod4',
     name: 'Classic Watch',
     price: 199.50,
-    imageUrl: '/images/placeholder.svg',
+    imageUrl: '/images/watch.jpg',
     stock: 3,
     description: 'An elegant timepiece.',
     category: 'Accessories', // Category added

@@ -349,7 +349,7 @@ export default function CheckoutPage() {
                   <CardContent className="p-4 text-sm text-muted-foreground">
                     <p>This is a prototype. No real payment is required.</p>
                     <p>
-                      Clicking &aptos;Place Order&aptos; will simulate a
+                      Clicking &apos;Place Order&apos; will simulate a
                       successful order.
                     </p>
                   </CardContent>

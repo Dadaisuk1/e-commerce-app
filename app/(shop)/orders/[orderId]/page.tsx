@@ -4,10 +4,31 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useOrders } from "../../../hooks/useOrders";
-import { Order, OrderStatus } from "../../../data";
-import { formatCurrency } from "../../../lib/utils";
-import Image from "next/image"; // Import Image component
+import { useOrders } from "../../../../app/hooks/useOrders";
+import { Order, OrderStatus } from "../../../../app/data";
+import { formatCurrency } from "../../../../app/lib/utils";
+import { cn } from "../../../../app/lib/utils"; // Import cn utility
+import Image from "next/image";
+
+// Import Shadcn/ui components
+import { Button } from "../../../../src/components/ui/button";
+import { Badge } from "../../../../src/components/ui/badge";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  // CardFooter,
+  CardHeader,
+  CardTitle,
+} from "../../../../src/components/ui/card";
+import { Separator } from "../../../../src/components/ui/separator";
+// import { AspectRatio } from "../../../../src/components/ui/aspect-ratio";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "../../../../src/components/ui/alert"; // For tracking info
+import { Truck, CheckCircle, XCircle } from "lucide-react"; // Icons
 
 // Helper function to format date nicely (can be moved to utils)
 const formatDate = (
@@ -28,25 +49,41 @@ const formatDate = (
   return new Date(date).toLocaleDateString("en-US", options);
 };
 
-// Helper function to get status color (can be moved to utils)
-const getStatusColor = (status: string): string => {
+// Helper function to get status variant for Badge
+const getStatusVariant = (
+  status: string
+): "default" | "secondary" | "destructive" | "outline" => {
   switch (status) {
     case "Processing":
-      return "text-yellow-700 bg-yellow-100 border-yellow-300";
+      return "secondary";
     case "Shipped":
-      return "text-blue-700 bg-blue-100 border-blue-300";
+      return "default";
     case "Delivered":
-      return "text-green-700 bg-green-100 border-green-300";
+      return "default"; // Consider a success variant if added
     case "Cancelled":
-      return "text-red-700 bg-red-100 border-red-300";
+      return "destructive";
     default:
-      return "text-gray-700 bg-gray-100 border-gray-300";
+      return "outline";
+  }
+};
+// Custom function to map status to specific colors/classes
+const getStatusColorClasses = (status: string): string => {
+  switch (status) {
+    case "Processing":
+      return "border-transparent bg-yellow-100 text-yellow-800 hover:bg-yellow-100/80 dark:bg-yellow-900/20 dark:text-yellow-400";
+    case "Shipped":
+      return "border-transparent bg-blue-100 text-blue-800 hover:bg-blue-100/80 dark:bg-blue-900/20 dark:text-blue-400";
+    case "Delivered":
+      return "border-transparent bg-green-100 text-green-800 hover:bg-green-100/80 dark:bg-green-900/20 dark:text-green-400";
+    // Destructive variant handles cancelled
+    default:
+      return "";
   }
 };
 
 export default function OrderDetailPage() {
   const params = useParams();
-  const { getOrderById, updateOrderStatus } = useOrders(); // Add updateOrderStatus
+  const { getOrderById, updateOrderStatus } = useOrders();
   const [order, setOrder] = useState<Order | null | undefined>(undefined); // undefined = loading
 
   const orderId =
@@ -59,15 +96,16 @@ export default function OrderDetailPage() {
     } else {
       setOrder(null); // Invalid ID
     }
-  }, [orderId, getOrderById]); // Rerun when ID changes
+    // Re-fetch order data if the order object itself changes (e.g., after status update)
+    // This might cause an infinite loop if getOrderById isn't stable or if update immediately triggers re-render
+    // A better approach in real app: trigger refetch manually or rely on context update propagation
+  }, [orderId, getOrderById, order]); // Added order dependency cautiously
 
-  // --- Simulation Controls ---
-  // In a real app, status updates come from the backend.
-  // Here, we add buttons to simulate the process.
   const handleSimulateUpdate = (newStatus: OrderStatus) => {
     if (order) {
       updateOrderStatus(order.id, newStatus);
-      // Re-fetch the order locally to show updated state immediately
+      // Force re-fetch/re-render by getting the updated order
+      // Note: Directly setting state might be better if context updates reliably
       const updatedOrder = getOrderById(order.id);
       setOrder(updatedOrder);
     }
@@ -86,18 +124,21 @@ export default function OrderDetailPage() {
   if (!order) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
-        <h1 className="text-2xl font-bold text-red-600 mb-4">
-          Order Not Found
-        </h1>
-        <p className="text-gray-600 mb-8">
-          Could not find details for order ID: {orderId || "N/A"}.
-        </p>
-        <Link
-          href="/orders"
-          className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-        >
-          Back to Order History
-        </Link>
+        <Card className="max-w-lg mx-auto">
+          <CardHeader>
+            <CardTitle className="text-2xl font-bold text-destructive">
+              Order Not Found
+            </CardTitle>
+            <CardDescription className="text-muted-foreground pt-2">
+              Could not find details for order ID: {orderId || "N/A"}.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild>
+              <Link href="/orders">Back to Order History</Link>
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -106,195 +147,234 @@ export default function OrderDetailPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-6">
-        <Link href="/orders" className="text-blue-600 hover:underline text-sm">
-          &larr; Back to Order History
-        </Link>
+        <Button variant="link" asChild className="p-0 h-auto text-sm">
+          <Link href="/orders">&larr; Back to Order History</Link>
+        </Button>
       </div>
 
-      <div className="bg-white p-6 sm:p-8 rounded-lg shadow-lg border border-gray-200">
-        {/* Order Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-4 mb-6 gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-              Order Details
-            </h1>
-            <p className="text-sm text-gray-500">Order #{order.id}</p>
-            <p className="text-sm text-gray-500">
-              Placed on: {formatDate(order.orderDate, true)}
-            </p>
+      <Card className="overflow-hidden">
+        {" "}
+        {/* Use Card as main container */}
+        <CardHeader className="bg-muted/30 p-4 sm:p-6">
+          {/* Order Header */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <div>
+              <CardTitle className="text-2xl sm:text-3xl">
+                Order Details
+              </CardTitle>
+              <CardDescription className="text-sm text-muted-foreground mt-1">
+                Order #{order.id} <span className="mx-1">&bull;</span> Placed
+                on: {formatDate(order.orderDate, true)}
+              </CardDescription>
+            </div>
+            <Badge
+              variant={getStatusVariant(order.status)}
+              className={cn("text-sm", getStatusColorClasses(order.status))}
+            >
+              {order.status}
+            </Badge>
           </div>
-          <div
-            className={`text-sm font-medium px-3 py-1.5 rounded-full border ${getStatusColor(
-              order.status
-            )}`}
-          >
-            Status: {order.status}
-          </div>
-        </div>
-
-        {/* Tracking Information (if applicable) */}
-        {order.status === "Shipped" && order.trackingNumber && (
-          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
-            <h3 className="font-semibold text-blue-800 mb-1">
-              Tracking Information
-            </h3>
-            <p className="text-sm text-blue-700">
-              Tracking Number:{" "}
-              <span className="font-mono">{order.trackingNumber}</span>
-            </p>
-            {order.estimatedDelivery && (
-              <p className="text-sm text-blue-700">
-                Estimated Delivery: {formatDate(order.estimatedDelivery)}
-              </p>
-            )}
-          </div>
-        )}
-        {order.status === "Delivered" && order.estimatedDelivery && (
-          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-md">
-            <h3 className="font-semibold text-green-800 mb-1">
-              Delivery Information
-            </h3>
-            <p className="text-sm text-green-700">
-              Delivered on: {formatDate(order.estimatedDelivery)}
-            </p>
-            {order.trackingNumber && (
-              <p className="text-sm text-green-700">
+        </CardHeader>
+        <CardContent className="p-4 sm:p-6 space-y-6">
+          {/* Tracking Information */}
+          {order.status === "Shipped" && order.trackingNumber && (
+            <Alert
+              variant="default"
+              className="bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-900/30 dark:border-blue-700 dark:text-blue-300"
+            >
+              <Truck className="h-4 w-4 !text-blue-600 dark:!text-blue-400" />{" "}
+              {/* Force color if needed */}
+              <AlertTitle className="font-semibold">
+                Tracking Information
+              </AlertTitle>
+              <AlertDescription className="text-xs sm:text-sm">
                 Tracking Number:{" "}
                 <span className="font-mono">{order.trackingNumber}</span>
-              </p>
-            )}
-          </div>
-        )}
+                <br />
+                {order.estimatedDelivery &&
+                  `Estimated Delivery: ${formatDate(order.estimatedDelivery)}`}
+              </AlertDescription>
+            </Alert>
+          )}
+          {order.status === "Delivered" && order.estimatedDelivery && (
+            <Alert
+              variant="default"
+              className="bg-green-50 border-green-200 text-green-800 dark:bg-green-900/30 dark:border-green-700 dark:text-green-300"
+            >
+              <CheckCircle className="h-4 w-4 !text-green-600 dark:!text-green-400" />
+              <AlertTitle className="font-semibold">
+                Delivery Information
+              </AlertTitle>
+              <AlertDescription className="text-xs sm:text-sm">
+                Delivered on: {formatDate(order.estimatedDelivery)}
+                {order.trackingNumber && (
+                  <>
+                    <br />
+                    Tracking Number:{" "}
+                    <span className="font-mono">{order.trackingNumber}</span>
+                  </>
+                )}
+              </AlertDescription>
+            </Alert>
+          )}
+          {order.status === "Cancelled" && (
+            <Alert variant="destructive">
+              <XCircle className="h-4 w-4" />
+              <AlertTitle className="font-semibold">Order Cancelled</AlertTitle>
+              <AlertDescription className="text-xs sm:text-sm">
+                This order has been cancelled.
+              </AlertDescription>
+            </Alert>
+          )}
 
-        {/* Order Items */}
-        <div className="mb-6">
-          <h2 className="text-xl font-semibold mb-3">Items Ordered</h2>
-          <div className="space-y-4">
-            {order.items.map((item) => (
-              <div
-                key={item.id}
-                className="flex items-center space-x-4 border-b pb-4 last:border-b-0"
-              >
-                <div className="relative w-16 h-16 bg-gray-100 rounded overflow-hidden flex-shrink-0">
-                  <Image
-                    src={item.imageUrl || "/images/placeholder.svg"}
-                    alt={item.name}
-                    fill
-                    style={{ objectFit: "contain" }}
-                    className="rounded"
-                  />
+          {/* Order Items */}
+          <div>
+            <h3 className="text-lg font-semibold mb-3">Items Ordered</h3>
+            <div className="space-y-4 border rounded-md">
+              {order.items.map((item, index) => (
+                <div
+                  key={item.id}
+                  className={cn(
+                    "flex items-center space-x-4 p-4",
+                    index < order.items.length - 1 && "border-b"
+                  )}
+                >
+                  <div className="relative w-16 h-16 bg-muted rounded overflow-hidden flex-shrink-0">
+                    <Image
+                      src={item.imageUrl || "/images/placeholder.svg"}
+                      alt={item.name}
+                      fill
+                      style={{ objectFit: "contain" }}
+                      className="rounded"
+                    />
+                  </div>
+                  <div className="flex-grow">
+                    <p className="font-medium">{item.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Qty: {item.quantity}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Price: {formatCurrency(item.price)}
+                    </p>
+                  </div>
+                  <div className="text-right font-medium flex-shrink-0">
+                    {formatCurrency(item.price * item.quantity)}
+                  </div>
                 </div>
-                <div className="flex-grow">
-                  <p className="font-semibold text-gray-800">{item.name}</p>
-                  <p className="text-sm text-gray-500">Qty: {item.quantity}</p>
-                  <p className="text-sm text-gray-500">
-                    Price: {formatCurrency(item.price)}
-                  </p>
-                </div>
-                <div className="text-right font-medium text-gray-800">
-                  {formatCurrency(item.price * item.quantity)}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Order Totals and Addresses */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 border-t pt-6">
-          {/* Totals Summary */}
-          <div className="md:col-span-1 space-y-2 text-sm">
-            <h3 className="text-lg font-semibold mb-2">Order Totals</h3>
-            <div className="flex justify-between">
-              <span>Subtotal:</span>
-              <span className="font-medium">
-                {formatCurrency(order.subtotal)}
-              </span>
+              ))}
             </div>
-            {order.discountApplied > 0 && (
-              <div className="flex justify-between text-green-600">
-                <span>Discount:</span>
+          </div>
+
+          {/* Order Totals and Addresses */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t">
+            {/* Totals Summary */}
+            <div className="md:col-span-1 space-y-2 text-sm">
+              <h3 className="text-lg font-semibold mb-2">Order Totals</h3>
+              <div className="flex justify-between">
+                <span>Subtotal:</span>
                 <span className="font-medium">
-                  -{formatCurrency(order.discountApplied)}
+                  {formatCurrency(order.subtotal)}
                 </span>
               </div>
-            )}
-            <div className="flex justify-between">
-              <span>Shipping:</span>
-              <span className="font-medium">FREE</span> {/* Placeholder */}
+              {order.discountApplied > 0 && (
+                <div className="flex justify-between text-green-600">
+                  <span>Discount:</span>
+                  <span className="font-medium">
+                    -{formatCurrency(order.discountApplied)}
+                  </span>
+                </div>
+              )}
+              <div className="flex justify-between">
+                <span>Shipping:</span>
+                <span className="font-medium">FREE</span>
+              </div>
+              <Separator className="my-2" />
+              <div className="flex justify-between font-bold text-base">
+                <span>Total Paid:</span>
+                <span>{formatCurrency(order.total)}</span>
+              </div>
             </div>
-            <div className="flex justify-between font-bold text-base border-t pt-2 mt-1">
-              <span>Total Paid:</span>
-              <span>{formatCurrency(order.total)}</span>
+
+            {/* Shipping Address */}
+            <div className="md:col-span-1">
+              <h3 className="text-lg font-semibold mb-2">Shipping Address</h3>
+              <address className="text-sm text-muted-foreground not-italic leading-snug">
+                {order.shippingAddress.firstName}{" "}
+                {order.shippingAddress.lastName}
+                <br />
+                {order.shippingAddress.address1}
+                <br />
+                {order.shippingAddress.city}, {order.shippingAddress.zip}
+                <br />
+                {order.shippingAddress.country}
+              </address>
+            </div>
+
+            {/* Billing Address */}
+            <div className="md:col-span-1">
+              <h3 className="text-lg font-semibold mb-2">Billing Address</h3>
+              <address className="text-sm text-muted-foreground not-italic leading-snug">
+                {order.billingAddress.firstName} {order.billingAddress.lastName}
+                <br />
+                {order.billingAddress.address1}
+                <br />
+                {order.billingAddress.city}, {order.billingAddress.zip}
+                <br />
+                {order.billingAddress.country}
+              </address>
             </div>
           </div>
 
-          {/* Shipping Address */}
-          <div className="md:col-span-1">
-            <h3 className="text-lg font-semibold mb-2">Shipping Address</h3>
-            <address className="text-sm text-gray-600 not-italic">
-              {order.shippingAddress.firstName} {order.shippingAddress.lastName}
-              <br />
-              {order.shippingAddress.address1}
-              <br />
-              {order.shippingAddress.city}, {order.shippingAddress.zip}
-              <br />
-              {order.shippingAddress.country}
-            </address>
+          {/* --- Simulation Controls --- */}
+          <div className="mt-6 pt-6 border-t">
+            <h3 className="text-center text-sm font-semibold text-muted-foreground mb-3">
+              -- Simulation Controls --
+            </h3>
+            <div className="flex flex-wrap justify-center gap-3">
+              {order.status === "Processing" && (
+                <Button
+                  onClick={() => handleSimulateUpdate("Shipped")}
+                  size="sm"
+                  variant="outline"
+                  className="cursor-pointer"
+                >
+                  {" "}
+                  Simulate Ship{" "}
+                </Button>
+              )}
+              {order.status === "Shipped" && (
+                <Button
+                  onClick={() => handleSimulateUpdate("Delivered")}
+                  size="sm"
+                  variant="outline"
+                  className="cursor-pointer"
+                >
+                  {" "}
+                  Simulate Deliver{" "}
+                </Button>
+              )}
+              {(order.status === "Processing" ||
+                order.status === "Shipped") && (
+                <Button
+                  onClick={() => handleSimulateUpdate("Cancelled")}
+                  size="sm"
+                  variant="destructive"
+                  className="cursor-pointer"
+                >
+                  {" "}
+                  Simulate Cancel{" "}
+                </Button>
+              )}
+              {(order.status === "Delivered" ||
+                order.status === "Cancelled") && (
+                <p className="text-xs text-muted-foreground p-2">
+                  No further status changes possible.
+                </p>
+              )}
+            </div>
           </div>
-
-          {/* Billing Address */}
-          <div className="md:col-span-1">
-            <h3 className="text-lg font-semibold mb-2">Billing Address</h3>
-            <address className="text-sm text-gray-600 not-italic">
-              {order.billingAddress.firstName} {order.billingAddress.lastName}
-              <br />
-              {order.billingAddress.address1}
-              <br />
-              {order.billingAddress.city}, {order.billingAddress.zip}
-              <br />
-              {order.billingAddress.country}
-            </address>
-          </div>
-        </div>
-
-        {/* --- Simulation Controls --- */}
-        <div className="mt-8 pt-6 border-t border-dashed">
-          <h3 className="text-center text-sm font-semibold text-gray-500 mb-3">
-            -- Simulation Controls --
-          </h3>
-          <div className="flex flex-wrap justify-center gap-3">
-            {order.status === "Processing" && (
-              <button
-                onClick={() => handleSimulateUpdate("Shipped")}
-                className="px-3 py-1.5 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
-              >
-                Simulate Ship Order
-              </button>
-            )}
-            {order.status === "Shipped" && (
-              <button
-                onClick={() => handleSimulateUpdate("Delivered")}
-                className="px-3 py-1.5 bg-green-500 text-white text-xs rounded hover:bg-green-600"
-              >
-                Simulate Deliver Order
-              </button>
-            )}
-            {(order.status === "Processing" || order.status === "Shipped") && (
-              <button
-                onClick={() => handleSimulateUpdate("Cancelled")}
-                className="px-3 py-1.5 bg-red-500 text-white text-xs rounded hover:bg-red-600"
-              >
-                Simulate Cancel Order
-              </button>
-            )}
-            {(order.status === "Delivered" || order.status === "Cancelled") && (
-              <p className="text-xs text-gray-500">
-                No further status changes possible.
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
