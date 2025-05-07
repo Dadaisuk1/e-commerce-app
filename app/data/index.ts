@@ -6,6 +6,7 @@ export interface Product {
   imageUrl: string;
   stock: number; // 0 means out of stock
   description?: string;
+  category?: string; // Optional category for better organization
 }
 
 export interface CartItem extends Product {

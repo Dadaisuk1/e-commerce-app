@@ -17,9 +17,7 @@ const CART_ITEMS_KEY = "myAppCartItems";
 const SAVED_ITEMS_KEY = "myAppSavedItems";
 
 // --- Helper function to safely get data from localStorage ---
-// This runs only on the client-side
 const loadFromLocalStorage = <T,>(key: string, defaultValue: T): T => {
-  // Check if window is defined (runs only on client)
   if (typeof window !== "undefined") {
     try {
       const item = window.localStorage.getItem(key);
@@ -29,7 +27,6 @@ const loadFromLocalStorage = <T,>(key: string, defaultValue: T): T => {
       return defaultValue;
     }
   }
-  // Return default value if on server or if window is undefined
   return defaultValue;
 };
 
@@ -59,30 +56,26 @@ interface CartProviderProps {
 }
 
 export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
-  // --- Initialize state from localStorage ---
   const [cartItems, setCartItems] = useState<CartItem[]>(() =>
     loadFromLocalStorage<CartItem[]>(CART_ITEMS_KEY, [])
   );
   const [savedItems, setSavedItems] = useState<SavedItem[]>(() =>
     loadFromLocalStorage<SavedItem[]>(SAVED_ITEMS_KEY, [])
   );
-  // Discount code is usually session-specific, not persisted long-term
   const [discountCode, setDiscountCode] = useState<string | null>(null);
 
-  // --- Effect to save cartItems to localStorage whenever it changes ---
+  // --- Effect to save cartItems to localStorage ---
   useEffect(() => {
     try {
-      // Check if window is defined (runs only on client)
       if (typeof window !== "undefined") {
         window.localStorage.setItem(CART_ITEMS_KEY, JSON.stringify(cartItems));
-        console.log("Cart items saved to localStorage");
       }
     } catch (error) {
       console.error(`Error writing cartItems to localStorage:`, error);
     }
-  }, [cartItems]); // Dependency array: only run when cartItems changes
+  }, [cartItems]);
 
-  // --- Effect to save savedItems to localStorage whenever it changes ---
+  // --- Effect to save savedItems to localStorage ---
   useEffect(() => {
     try {
       if (typeof window !== "undefined") {
@@ -90,15 +83,13 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
           SAVED_ITEMS_KEY,
           JSON.stringify(savedItems)
         );
-        console.log("Saved items saved to localStorage");
       }
     } catch (error) {
       console.error(`Error writing savedItems to localStorage:`, error);
     }
-  }, [savedItems]); // Dependency array: only run when savedItems changes
+  }, [savedItems]);
 
-  // --- Core Cart Logic --- (Functions remain the same, they just update state, which triggers the useEffects above)
-
+  // --- Core Cart Logic ---
   const addToCart = useCallback(
     (product: Product, quantity: number) => {
       const existingCartItem = cartItems.find((item) => item.id === product.id);
@@ -126,7 +117,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
       });
     },
     [cartItems]
-  ); // Keep dependency
+  );
 
   const removeFromCart = useCallback((productId: string) => {
     setCartItems((prevItems) =>
@@ -157,8 +148,10 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   );
 
   const clearCart = useCallback(() => {
-    setCartItems([]); // This will trigger the useEffect to save the empty array
+    setCartItems([]);
+    setSavedItems([]);
     setDiscountCode(null);
+    console.log("Cart and Saved Items cleared");
   }, []);
 
   const applyDiscount = useCallback((code: string) => {
@@ -171,8 +164,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     }
   }, []);
 
-  // --- Save for Later Logic --- (Functions remain the same)
-
+  // --- Save for Later Logic ---
   const saveForLater = useCallback(
     (productId: string) => {
       const itemToSave = cartItems.find((item) => item.id === productId);
@@ -227,7 +219,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     setSavedItems((prev) => prev.filter((item) => item.id !== productId));
   }, []);
 
-  // --- Calculated Values --- (remain the same)
+  // --- Calculated Values ---
   const subtotal = useMemo(() => {
     return cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   }, [cartItems]);
@@ -241,7 +233,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     return subtotal - discountAmount;
   }, [subtotal, discountAmount]);
 
-  // --- Context Value --- (remains the same)
+  // --- Context Value ---
   const value = useMemo(
     () => ({
       cartItems,
@@ -280,7 +272,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 };
 
-// Custom hook remains the same
+// Custom hook to access cart context
 export const useCart = (): CartContextType => {
   const context = useContext(CartContext);
   if (context === undefined) {

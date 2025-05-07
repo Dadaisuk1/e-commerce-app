@@ -366,7 +366,7 @@ export default function CheckoutPage() {
                   type="submit"
                   disabled={isLoading}
                   size="lg"
-                  className="w-full"
+                  className="w-full cursor-pointer"
                 >
                   {isLoading ? "Placing Order..." : "Place Order"}
                 </Button>
