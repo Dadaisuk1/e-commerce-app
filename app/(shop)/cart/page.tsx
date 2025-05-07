@@ -3,12 +3,25 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { useCart } from "../../hooks/useCart";
-import { CartItem } from "../../components/CartItem"; // Import the new component
-import { formatCurrency } from "../../lib/utils";
-// Import UI components if using Shadcn/ui or similar
-// import { Button } from '@/app/components/ui/button';
-// import { Input } from '@/app/components/ui/input';
+import { useCart } from "../../../app/hooks/useCart";
+import { CartItem } from "../../../app/components/CartItem";
+import { formatCurrency } from "../../../app/lib/utils";
+import { cn } from "../../../app/lib/utils";
+
+// Import Shadcn/ui components
+import { Button } from "../../../src/components/ui/button";
+import { Input } from "../../../src/components/ui/input";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "../../../src/components/ui/card";
+import { Separator } from "../../../src/components/ui/separator";
+import { Label } from "../../../src/components/ui/label";
+import { buttonVariants } from "../../../src/components/ui/button"; // Import buttonVariants
 
 export default function CartPage() {
   const {
@@ -18,7 +31,7 @@ export default function CartPage() {
     total,
     applyDiscount,
     discountCode,
-    clearCart, // Added for potential "Clear Cart" button
+    clearCart,
   } = useCart();
   const [couponInput, setCouponInput] = useState("");
 
@@ -26,7 +39,6 @@ export default function CartPage() {
     applyDiscount(couponInput);
   };
 
-  // Optional: Handle clearing the cart
   const handleClearCart = () => {
     if (confirm("Are you sure you want to clear your cart?")) {
       clearCart();
@@ -36,16 +48,22 @@ export default function CartPage() {
   if (cartItems.length === 0) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
-        <h1 className="text-3xl font-bold mb-4">Your Cart is Empty</h1>
-        <p className="text-gray-600 mb-8">
-          Looks like you haven't added anything yet.
-        </p>
-        <Link
-          href="/"
-          className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-lg font-semibold"
-        >
-          Continue Shopping
-        </Link>
+        <Card className="max-w-lg mx-auto">
+          <CardHeader>
+            <CardTitle className="text-3xl font-bold">
+              Your Cart is Empty
+            </CardTitle>
+            <CardDescription className="text-gray-600 pt-2">
+              Looks like you haven&apos;t added anything yet.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {/* This usage of asChild seems okay */}
+            <Button asChild size="lg">
+              <Link href="/">Continue Shopping</Link>
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -59,83 +77,100 @@ export default function CartPage() {
           {cartItems.map((item) => (
             <CartItem key={item.id} item={item} />
           ))}
-          {/* Optional Clear Cart Button */}
+          {/* Clear Cart Button */}
           <div className="text-right mt-4">
-            <button
+            <Button
               onClick={handleClearCart}
-              className="text-sm text-red-500 hover:text-red-700 hover:underline"
+              variant="link"
+              className="text-sm text-red-600 hover:text-red-700 h-auto p-0"
             >
               Clear Cart
-            </button>
+            </Button>
           </div>
         </div>
 
-        {/* Order Summary */}
-        <div className="border rounded-lg p-6 shadow-sm h-fit bg-white lg:sticky lg:top-24">
-          {" "}
-          {/* Sticky summary on larger screens */}
-          <h2 className="text-xl font-semibold mb-4 border-b pb-2">
-            Order Summary
-          </h2>
-          <div className="space-y-2 mb-4">
-            <div className="flex justify-between">
-              <span>Subtotal:</span>
-              <span>{formatCurrency(subtotal)}</span>
-            </div>
-            {discountAmount > 0 && (
-              <div className="flex justify-between text-green-600">
-                <span>Discount ({discountCode}):</span>
-                <span>-{formatCurrency(discountAmount)}</span>
+        {/* Order Summary Card */}
+        <div className="lg:col-span-1">
+          <Card className="lg:sticky lg:top-24">
+            <CardHeader>
+              <CardTitle className="text-xl font-semibold">
+                Order Summary
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Totals */}
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span>Subtotal:</span>
+                  <span>{formatCurrency(subtotal)}</span>
+                </div>
+                {discountAmount > 0 && (
+                  <div className="flex justify-between text-green-600">
+                    <span>Discount ({discountCode}):</span>
+                    <span>-{formatCurrency(discountAmount)}</span>
+                  </div>
+                )}
               </div>
-            )}
-            <div className="flex justify-between font-bold text-lg border-t pt-2 mt-2">
-              <span>Total:</span>
-              <span>{formatCurrency(total)}</span>
-            </div>
-          </div>
-          {/* Discount Code Input */}
-          <div className="mb-6 space-y-2">
-            <label
-              htmlFor="discount-code"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Discount Code
-            </label>
-            <div className="flex">
-              <input
-                id="discount-code"
-                type="text"
-                placeholder="Enter code (e.g., SAVE10)"
-                value={couponInput}
-                onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
-                disabled={!!discountCode} // Disable if already applied
-                className="flex-grow px-3 py-2 border border-gray-300 rounded-l-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-gray-100"
-              />
-              <button
-                onClick={handleApplyCoupon}
-                className="px-4 py-2 bg-gray-600 text-white rounded-r-md hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={!!discountCode || !couponInput}
+              <Separator />
+              <div className="flex justify-between font-bold text-lg">
+                <span>Total:</span>
+                <span>{formatCurrency(total)}</span>
+              </div>
+              <Separator />
+              {/* Discount Code Input */}
+              <div className="space-y-2 pt-2">
+                <Label htmlFor="discount-code" className="text-sm font-medium">
+                  Discount Code
+                </Label>
+                <div className="flex">
+                  <Input
+                    id="discount-code"
+                    type="text"
+                    placeholder="Enter code (e.g., SAVE10)"
+                    value={couponInput}
+                    onChange={(e) =>
+                      setCouponInput(e.target.value.toUpperCase())
+                    }
+                    disabled={!!discountCode}
+                    className={cn(
+                      "rounded-r-none focus-visible:ring-offset-0 focus-visible:ring-0",
+                      !!discountCode && "bg-gray-100"
+                    )}
+                  />
+                  <Button
+                    onClick={handleApplyCoupon}
+                    disabled={!!discountCode || !couponInput}
+                    className="rounded-l-none"
+                    variant="secondary"
+                  >
+                    Apply
+                  </Button>
+                </div>
+                {discountCode && (
+                  <p className="text-sm text-green-600 pt-1">
+                    Discount &apos;{discountCode}&apos; applied!
+                  </p>
+                )}
+              </div>
+            </CardContent>
+            <CardFooter className="flex flex-col gap-4">
+              {/* This usage of asChild seems okay */}
+              <Button asChild size="lg" className="w-full">
+                <Link href="/checkout">Proceed to Checkout</Link>
+              </Button>
+              {/* *** MODIFICATION START: Remove asChild, style Link directly *** */}
+              <Link
+                href="/"
+                className={cn(
+                  buttonVariants({ variant: "link" }), // Apply button styles
+                  "text-sm text-blue-600 h-auto p-0" // Keep custom styles
+                )}
               >
-                Apply
-              </button>
-            </div>
-            {discountCode && (
-              <p className="text-sm text-green-600 mt-1">
-                Discount "{discountCode}" applied!
-              </p>
-            )}
-          </div>
-          {/* Checkout Button */}
-          <Link href="/checkout">
-            <button className="w-full px-6 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-lg font-semibold">
-              Proceed to Checkout
-            </button>
-          </Link>
-          <div className="text-center mt-4">
-            <Link href="/" className="text-sm text-blue-600 hover:underline">
-              or Continue Shopping
-            </Link>
-          </div>
+                or Continue Shopping
+              </Link>
+              {/* *** MODIFICATION END *** */}
+            </CardFooter>
+          </Card>
         </div>
       </div>
     </div>
