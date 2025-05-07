@@ -3,10 +3,9 @@
 
 import React from "react";
 import Link from "next/link";
-import { useCart } from "../../hooks/useCart";
-import { useAuth } from "../../hooks/useAuth";
+import { useCart } from "../../../app/hooks/useCart";
+import { useAuth } from "../../../app/hooks/useAuth";
 import NotificationBell from "../NotificationBell";
-
 export default function Header() {
   const { cartItems } = useCart();
   const { currentUser, logout } = useAuth();

@@ -1,137 +1,148 @@
 // src/app/(auth)/register/page.tsx
-"use client"; // Needed for useState and hooks
+"use client";
 
 import React, { useState, FormEvent } from "react";
 import Link from "next/link";
-import { useAuth } from "../../hooks/useAuth";
-import { useRouter } from "next/navigation"; // Import useRouter for redirection
+import { useAuth } from "../../../app/hooks/useAuth";
+import { useRouter } from "next/navigation";
+
+// Import Shadcn/ui components
+import { Button } from "../../../src/components/ui/button";
+import { Input } from "../../../src/components/ui/input";
+import { Label } from "../../../src/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "../../../src/components/ui/card";
 
 export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false); // Add loading state
   const { register } = useAuth();
-  const router = useRouter(); // Get router instance
+  const router = useRouter();
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
     setError(null);
+    setIsLoading(true); // Set loading true
 
     if (!email || !password || !confirmPassword) {
       setError("Please fill in all fields.");
+      setIsLoading(false); // Reset loading
       return;
     }
 
     if (password !== confirmPassword) {
       setError("Passwords do not match.");
+      setIsLoading(false); // Reset loading
+      return;
+    }
+
+    // Basic password strength check (example)
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters long.");
+      setIsLoading(false);
       return;
     }
 
     try {
-      // Call the register function from AuthContext
       register(email, password);
-
-      // --- IMPORTANT ---
-      // Similar to login, our simulated register logs the user in immediately.
-      // Redirect after successful registration.
+      // Since register is synchronous in simulation:
       console.log("Redirecting to homepage after simulated registration...");
-      router.push("/"); // Redirect to homepage
+      router.push("/");
     } catch (err) {
-      // Handle errors from a real API call here
       console.error("Registration error (simulated catch):", err);
-      setError("Registration failed. Please try again."); // Generic error
+      setError("Registration failed. Please try again.");
+      setIsLoading(false); // Reset loading on error
     }
+    // No need to reset loading here if redirecting on success
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md">
-        <h1 className="text-2xl font-bold text-center text-gray-900">
-          Create an Account
-        </h1>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Email address
-            </label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="block w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              placeholder="you@example.com"
-            />
-          </div>
+    <div className="flex items-center justify-center min-h-screen bg-gray-100 px-4">
+      {/* Use Shadcn Card for styling the form container */}
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl font-bold">
+            Create an Account
+          </CardTitle>
+          <CardDescription>
+            Enter your details below to register
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email address</Label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                disabled={isLoading}
+              />
+            </div>
 
-          <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Password
-            </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="new-password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="block w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              placeholder="Create a password"
-            />
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="new-password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Create a password (min. 6 chars)"
+                disabled={isLoading}
+              />
+            </div>
 
-          <div>
-            <label
-              htmlFor="confirm-password"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Confirm Password
-            </label>
-            <input
-              id="confirm-password"
-              name="confirm-password"
-              type="password"
-              autoComplete="new-password"
-              required
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="block w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              placeholder="Confirm your password"
-            />
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirm-password">Confirm Password</Label>
+              <Input
+                id="confirm-password"
+                name="confirm-password"
+                type="password"
+                autoComplete="new-password"
+                required
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Confirm your password"
+                disabled={isLoading}
+              />
+            </div>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && <p className="text-sm text-red-600">{error}</p>}
 
-          <div>
-            <button
-              type="submit"
-              className="w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? "Registering..." : "Register"}
+            </Button>
+          </form>
+        </CardContent>
+        <CardFooter className="flex justify-center text-sm">
+          <p className="text-gray-600">
+            Already have an account?{" "}
+            <Link
+              href="/login"
+              className="font-medium text-blue-600 hover:text-blue-500 hover:underline"
             >
-              Register
-            </button>
-          </div>
-        </form>
-        <p className="text-sm text-center text-gray-600">
-          Already have an account?{" "}
-          <Link
-            href="/login"
-            className="font-medium text-blue-600 hover:text-blue-500"
-          >
-            Login here
-          </Link>
-        </p>
-      </div>
+              Login here
+            </Link>
+          </p>
+        </CardFooter>
+      </Card>
     </div>
   );
 }

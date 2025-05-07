@@ -3,6 +3,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image"; // Importing Image component from Next.js
 import { useParams } from "next/navigation"; // Hook to get dynamic route params
 import { useOrders } from "../../../hooks/useOrders";
 import { Order } from "../../../data"; // Import the Order type

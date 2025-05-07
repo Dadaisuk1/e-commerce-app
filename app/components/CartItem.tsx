@@ -3,7 +3,7 @@
 
 import React from "react";
 import Image from "next/image";
-import Link from "next/link";
+// import Link from "next/link";
 import { CartItem as CartItemType } from "../data"; // Rename type import to avoid conflict
 import { useCart } from "../hooks/useCart";
 import { formatCurrency } from "../lib/utils";

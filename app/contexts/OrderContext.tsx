@@ -1,92 +1,201 @@
-// src/app/components/ProductCard.tsx
+// src/app/contexts/OrderContext.tsx
 "use client";
 
-import React from "react";
-import Image from "next/image";
-import { Product } from "../data";
-import { useCart } from "../hooks/useCart"; // Import the custom hook
-import { formatCurrency } from "../lib/utils";
+import React, {
+  createContext,
+  useState,
+  useContext,
+  ReactNode,
+  useMemo,
+  useCallback,
+} from "react";
+import { Order, CartItem, OrderStatus } from "../../app/data"; // Import necessary types
+import { generateOrderId } from "../../app/lib/utils"; // Utility to create unique IDs
 
-interface ProductCardProps {
-  product: Product;
+// Define the shape of a notification message
+interface Notification {
+  id: number; // Simple ID for key prop
+  message: string;
+  read: boolean;
+  timestamp: Date;
 }
 
-export function ProductCard({ product }: ProductCardProps) {
-  // Use the hook to get cart state and functions
-  const { addToCart, cartItems } = useCart();
+// Define the shape of the context data
+interface OrderContextType {
+  orders: Order[];
+  notifications: Notification[]; // Add notifications state
+  placeOrder: (
+    cartItems: CartItem[],
+    totalDetails: {
+      subtotal: number;
+      discountAmount: number;
+      total: number;
+      discountCode: string | null;
+    },
+    shippingAddress: Record<string, string>,
+    billingAddress: Record<string, string>,
+    userId: string | null
+  ) => Order;
+  getOrderById: (orderId: string) => Order | undefined;
+  updateOrderStatus: (orderId: string, newStatus: OrderStatus) => void;
+  addNotification: (message: string) => void; // Function to add notifications
+  markNotificationsRead: () => void; // Function to mark as read
+  // Add functions to get orders for a specific user later
+}
 
-  // Find how many of this specific item are currently in the cart
-  const quantityInCart =
-    cartItems.find((item) => item.id === product.id)?.quantity || 0;
+// Create the context
+const OrderContext = createContext<OrderContextType | undefined>(undefined);
 
-  // Calculate the stock currently available to add
-  const availableStock = product.stock - quantityInCart;
+// Create a provider component
+interface OrderProviderProps {
+  children: ReactNode;
+}
 
-  // Determine if the item is effectively out of stock (considering cart quantity)
-  const isEffectivelyOutOfStock = availableStock <= 0;
+export const OrderProvider: React.FC<OrderProviderProps> = ({ children }) => {
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]); // State for notifications
 
-  const handleAddToCart = () => {
-    // Only add if there's available stock
-    if (!isEffectivelyOutOfStock) {
-      addToCart(product, 1); // Add 1 item to the cart
-    } else {
-      // Optional: Add feedback if trying to add when none are available
-      alert(`Sorry, no more ${product.name} available to add.`);
-    }
-  };
+  // Helper to add a notification
+  const addNotification = useCallback((message: string) => {
+    const newNotification: Notification = {
+      id: Date.now(), // Simple unique ID based on timestamp
+      message,
+      read: false,
+      timestamp: new Date(),
+    };
+    setNotifications((prev) => [newNotification, ...prev]); // Add to the beginning of the list
+    console.log(`Notification added: ${message}`);
+  }, []);
+
+  // Function to place a new order
+  const placeOrder = useCallback(
+    (
+      cartItems: CartItem[],
+      totalDetails: {
+        subtotal: number;
+        discountAmount: number;
+        total: number;
+        discountCode: string | null;
+      },
+      shippingAddress: Record<string, string>,
+      billingAddress: Record<string, string>,
+      userId: string | null
+    ): Order => {
+      const newOrder: Order = {
+        id: generateOrderId(),
+        userId: userId,
+        items: [...cartItems],
+        subtotal: totalDetails.subtotal,
+        discountApplied: totalDetails.discountAmount,
+        total: totalDetails.total,
+        shippingAddress: { ...shippingAddress },
+        billingAddress: { ...billingAddress },
+        orderDate: new Date(),
+        status: "Processing",
+      };
+
+      console.log("Placing new order:", newOrder);
+      setOrders((prevOrders) => [...prevOrders, newOrder]);
+
+      // Add notification for order placement
+      addNotification(
+        `Order #${newOrder.id.split("-")[1]} placed successfully!`
+      );
+
+      // Cart clearing is handled in CheckoutPage after this function returns the order
+
+      return newOrder;
+    },
+    [addNotification]
+  ); // Add addNotification dependency
+
+  // Function to retrieve a specific order
+  const getOrderById = useCallback(
+    (orderId: string): Order | undefined => {
+      return orders.find((order) => order.id === orderId);
+    },
+    [orders]
+  );
+
+  // Function to simulate updating order status
+  const updateOrderStatus = useCallback(
+    (orderId: string, newStatus: OrderStatus) => {
+      let notificationMessage = ""; // Variable to hold the notification message
+
+      setOrders((prevOrders) =>
+        prevOrders.map((order) => {
+          if (order.id === orderId && order.status !== newStatus) {
+            // Only update if status actually changes
+            console.log(`Updating order ${orderId} status to ${newStatus}`);
+            const updatedOrder = { ...order, status: newStatus };
+
+            // Set notification message based on new status
+            notificationMessage = `Order #${
+              orderId.split("-")[1]
+            } status updated to ${newStatus}.`;
+
+            if (newStatus === "Shipped") {
+              updatedOrder.trackingNumber = `TN${Date.now()}`;
+              const deliveryDate = new Date();
+              deliveryDate.setDate(deliveryDate.getDate() + 5);
+              updatedOrder.estimatedDelivery = deliveryDate;
+            } else if (newStatus === "Delivered") {
+              if (!updatedOrder.estimatedDelivery) {
+                updatedOrder.estimatedDelivery = new Date();
+              }
+            }
+            return updatedOrder;
+          }
+          return order;
+        })
+      );
+
+      // Add the notification outside the map function if a message was set
+      if (notificationMessage) {
+        addNotification(notificationMessage);
+      }
+    },
+    [addNotification]
+  ); // Add addNotification dependency
+
+  // Function to mark all notifications as read
+  const markNotificationsRead = useCallback(() => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    console.log("Marked all notifications as read");
+  }, []);
+
+  // Memoize the context value
+  const value = useMemo(
+    () => ({
+      orders,
+      notifications, // Include notifications
+      placeOrder,
+      getOrderById,
+      updateOrderStatus,
+      addNotification, // Expose addNotification if needed directly
+      markNotificationsRead, // Expose mark as read function
+    }),
+    [
+      orders,
+      notifications,
+      placeOrder,
+      getOrderById,
+      updateOrderStatus,
+      addNotification,
+      markNotificationsRead,
+    ]
+  );
 
   return (
-    <div className="border rounded-lg p-4 shadow-sm flex flex-col bg-white">
-      {/* Image Placeholder */}
-      <div className="relative w-full h-48 mb-4 bg-gray-200 rounded flex items-center justify-center">
-        <Image
-          src={product.imageUrl || "/images/placeholder.svg"} // Fallback image
-          alt={product.name}
-          fill // Use fill prop
-          style={{ objectFit: "contain" }} // Use style prop
-          className="rounded"
-        />
-        {/* Show "Out of Stock" overlay based on *initial* stock for clarity */}
-        {product.stock <= 0 && (
-          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded">
-            <span className="text-white font-bold text-lg">Out of Stock</span>
-          </div>
-        )}
-      </div>
-
-      <h3 className="text-lg font-semibold mb-1 truncate">{product.name}</h3>
-      <p className="text-gray-700 mb-2 font-medium">
-        {formatCurrency(product.price)}
-      </p>
-      <p className="text-sm text-gray-500 mb-4 min-h-[40px]">
-        {product.description || "No description available."}
-      </p>
-
-      {/* Display Available Stock */}
-      <p
-        className={`text-sm mb-4 font-semibold ${
-          isEffectivelyOutOfStock ? "text-red-600" : "text-green-700"
-        }`}
-      >
-        {isEffectivelyOutOfStock
-          ? product.stock <= 0
-            ? "Out of Stock"
-            : "None available (in cart)" // Differentiate why it's unavailable
-          : `${availableStock} available`}
-      </p>
-
-      {/* Add to Cart Button - Disable based on available stock */}
-      <button
-        onClick={handleAddToCart}
-        disabled={isEffectivelyOutOfStock} // Disable if none are available to add
-        className={`mt-auto w-full px-4 py-2 rounded text-white font-semibold transition-colors duration-200 ${
-          isEffectivelyOutOfStock
-            ? "bg-gray-400 cursor-not-allowed"
-            : "bg-blue-600 hover:bg-blue-700"
-        }`}
-      >
-        {isEffectivelyOutOfStock ? "Unavailable" : "Add to Cart"}
-      </button>
-    </div>
+    <OrderContext.Provider value={value}>{children}</OrderContext.Provider>
   );
-}
+};
+
+// Update the hook export if needed (though usually done in a separate file)
+export const useOrders = (): OrderContextType => {
+  const context = useContext(OrderContext);
+  if (context === undefined) {
+    throw new Error("useOrders must be used within an OrderProvider");
+  }
+  return context;
+};
