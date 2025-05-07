@@ -33,19 +33,14 @@ export default function Header() {
     0
   );
 
-  // Get user initials for Avatar fallback
   const getUserInitials = (email: string | undefined): string => {
     if (!email) return "?";
-    return email.substring(0, 1).toUpperCase(); // Just use first letter of email
+    return email.substring(0, 1).toUpperCase();
   };
 
   return (
-    // Use theme variables for background and border
     <header className="bg-background border-b border-border sticky top-0 z-50 shadow-sm">
       <nav className="container mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        {" "}
-        {/* Set fixed height */}
-        {/* Site Logo/Name - Use primary color */}
         <div className="flex items-center">
           <Link
             href="/"
@@ -54,11 +49,9 @@ export default function Header() {
             MyStore
           </Link>
         </div>
-        {/* Navigation Links & Icons - Use foreground/muted-foreground */}
+
         <div className="flex items-center space-x-2 sm:space-x-3">
-          {" "}
-          {/* Reduced spacing slightly */}
-          {/* Cart Link with Item Count */}
+          {/* Cart Link */}
           <Button
             variant="ghost"
             size="icon"
@@ -74,19 +67,12 @@ export default function Header() {
               )}
             </Link>
           </Button>
-          {/* Notification Bell */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="relative"
-            aria-label={`Notifications`}
-          >
-            <NotificationBell />{" "}
-            {/* Bell component handles its own icon/badge */}
-          </Button>
+
+          {/* Notification Bell Component (Handles its own trigger now) */}
+          <NotificationBell />
+
           {/* Conditional Auth Section */}
           {currentUser ? (
-            // --- User Logged In: Show Avatar + Dropdown ---
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -94,8 +80,6 @@ export default function Header() {
                   className="relative h-8 w-8 rounded-full"
                 >
                   <Avatar className="h-8 w-8">
-                    {/* Add AvatarImage if you have user profile image URLs */}
-                    {/* <AvatarImage src={currentUser.profileImageUrl} alt={currentUser.email} /> */}
                     <AvatarFallback>
                       {getUserInitials(currentUser.email)}
                     </AvatarFallback>
@@ -114,24 +98,17 @@ export default function Header() {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                {/* Use DropdownMenuItem with asChild for Links */}
                 <DropdownMenuItem asChild className="cursor-pointer">
                   <Link href="/orders">My Orders</Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem disabled>
-                  {" "}
-                  {/* Example disabled item */}
-                  Settings
-                </DropdownMenuItem>
+                <DropdownMenuItem disabled>Settings</DropdownMenuItem>
                 <DropdownMenuSeparator />
-                {/* Use onSelect for actions like logout */}
                 <DropdownMenuItem onClick={logout} className="cursor-pointer">
                   Logout
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            // --- User Logged Out: Show Login/Register Buttons ---
             <>
               <Button variant="ghost" size="sm" asChild>
                 <Link href="/login">Login</Link>

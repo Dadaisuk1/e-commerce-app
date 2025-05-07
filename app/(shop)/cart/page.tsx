@@ -4,9 +4,12 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useCart } from "../../../app/hooks/useCart";
+import { useAuth } from "../../hooks/useAuth"; // Import useAuth
+import { useRouter } from "next/navigation"; // Import useRouter
 import { CartItem } from "../../../app/components/CartItem";
 import { formatCurrency } from "../../../app/lib/utils";
 import { cn } from "../../../app/lib/utils";
+import { buttonVariants } from "../../../src/components/ui/button";
 
 // Import Shadcn/ui components
 import { Button } from "../../../src/components/ui/button";
@@ -21,7 +24,6 @@ import {
 } from "../../../src/components/ui/card";
 import { Separator } from "../../../src/components/ui/separator";
 import { Label } from "../../../src/components/ui/label";
-import { buttonVariants } from "../../../src/components/ui/button"; // Import buttonVariants
 
 export default function CartPage() {
   const {
@@ -33,6 +35,8 @@ export default function CartPage() {
     discountCode,
     clearCart,
   } = useCart();
+  const { currentUser } = useAuth(); // Get current user status
+  const router = useRouter(); // Get router instance
   const [couponInput, setCouponInput] = useState("");
 
   const handleApplyCoupon = () => {
@@ -45,6 +49,20 @@ export default function CartPage() {
     }
   };
 
+  // --- Handle Proceed to Checkout Click ---
+  const handleProceedToCheckout = () => {
+    if (currentUser) {
+      // If logged in, go to checkout
+      router.push("/checkout");
+    } else {
+      // If not logged in, redirect to login
+      // Optional: Add redirect query param: router.push('/login?redirect=/checkout');
+      alert("Please log in to proceed to checkout."); // Give user feedback
+      router.push("/login");
+    }
+  };
+  // --- End Handle Proceed to Checkout Click ---
+
   if (cartItems.length === 0) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
@@ -54,11 +72,10 @@ export default function CartPage() {
               Your Cart is Empty
             </CardTitle>
             <CardDescription className="text-gray-600 pt-2">
-              Looks like you haven&apos;t added anything yet.
+              Looks like you haven&aptos;t added anything yet.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {/* This usage of asChild seems okay */}
             <Button asChild size="lg">
               <Link href="/">Continue Shopping</Link>
             </Button>
@@ -77,7 +94,6 @@ export default function CartPage() {
           {cartItems.map((item) => (
             <CartItem key={item.id} item={item} />
           ))}
-          {/* Clear Cart Button */}
           <div className="text-right mt-4">
             <Button
               onClick={handleClearCart}
@@ -148,27 +164,32 @@ export default function CartPage() {
                 </div>
                 {discountCode && (
                   <p className="text-sm text-green-600 pt-1">
-                    Discount &apos;{discountCode}&apos; applied!
+                    Discount &aptos;{discountCode}&aptos; applied!
                   </p>
                 )}
               </div>
             </CardContent>
             <CardFooter className="flex flex-col gap-4">
-              {/* This usage of asChild seems okay */}
-              <Button asChild size="lg" className="w-full">
-                <Link href="/checkout">Proceed to Checkout</Link>
+              {/* --- Updated Checkout Button --- */}
+              {/* Remove the Link wrapper and use onClick */}
+              <Button
+                onClick={handleProceedToCheckout}
+                size="lg"
+                className="w-full"
+              >
+                Proceed to Checkout
               </Button>
-              {/* *** MODIFICATION START: Remove asChild, style Link directly *** */}
+              {/* --- End Updated Checkout Button --- */}
+
               <Link
                 href="/"
                 className={cn(
-                  buttonVariants({ variant: "link" }), // Apply button styles
-                  "text-sm text-blue-600 h-auto p-0" // Keep custom styles
+                  buttonVariants({ variant: "link" }),
+                  "text-sm text-blue-600 h-auto p-0"
                 )}
               >
                 or Continue Shopping
               </Link>
-              {/* *** MODIFICATION END *** */}
             </CardFooter>
           </Card>
         </div>
