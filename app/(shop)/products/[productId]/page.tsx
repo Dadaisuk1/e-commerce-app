@@ -194,7 +194,7 @@ export default function ProductDetailPage() {
               disabled={
                 isEffectivelyOutOfStock || quantityToAdd > availableStock
               } // Disable if OOS or trying to add more than available
-              className="flex-grow" // Allow button to grow
+              className="flex-grow cursor-pointer" // Allow button to grow
             >
               {isEffectivelyOutOfStock ? "Unavailable" : "Add to Cart"}
             </Button>

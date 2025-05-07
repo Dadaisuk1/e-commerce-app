@@ -76,8 +76,8 @@ export function CartItem({ item }: CartItemProps) {
         <div className="flex items-center border border-gray-300 rounded">
           <button
             onClick={handleDecreaseQuantity}
-            className="px-2 py-1 text-gray-600 hover:bg-gray-100 rounded-l disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={item.quantity <= 1} // Disable if quantity is 1
+            className="px-2 py-1 text-gray-600 hover:bg-gray-100 rounded-l disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            disabled={item.quantity <= 1}
           >
             -
           </button>
@@ -93,7 +93,7 @@ export function CartItem({ item }: CartItemProps) {
           <button
             onClick={handleIncreaseQuantity}
             className="px-2 py-1 text-gray-600 hover:bg-gray-100 rounded-r disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={item.quantity >= item.stock} // Disable if quantity reaches stock
+            disabled={item.quantity >= item.stock}
           >
             +
           </button>

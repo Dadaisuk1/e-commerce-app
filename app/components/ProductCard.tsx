@@ -114,7 +114,7 @@ export function ProductCard({ product }: ProductCardProps) {
         <Button
           onClick={handleAddToCart}
           disabled={isEffectivelyOutOfStock}
-          className="w-full mt-auto"
+          className="w-full mt-auto cursor-pointer"
           variant={isEffectivelyOutOfStock ? "outline" : "default"}
         >
           {isEffectivelyOutOfStock ? "Unavailable" : "Add to Cart"}
