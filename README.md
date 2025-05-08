@@ -126,3 +126,9 @@ This prototype simulates the following functionalities:
 - This is a frontend prototype; all data (products, users, orders) is either mocked or stored temporarily in the browser's `localStorage`. There is no real backend database or API interaction for data storage or validation beyond basic simulations.
 - Authentication is simulated; password security is not implemented.
 - Payment processing is not implemented.
+
+## Top contributors:
+
+<a href="https://github.com/dadaisuk1/e-commerce-app/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=dadaisuk1/e-commerce-app" alt="contrib.rocks image" />
+</a>
