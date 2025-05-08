@@ -4,31 +4,33 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+// Adjusted import paths based on user's code
 import { useOrders } from "../../../../app/hooks/useOrders";
 import { Order, OrderStatus } from "../../../../app/data";
 import { formatCurrency } from "../../../../app/lib/utils";
 import { cn } from "../../../../app/lib/utils"; // Import cn utility
 import Image from "next/image";
 
-// Import Shadcn/ui components
+// Import Shadcn/ui components using user's paths
 import { Button } from "../../../../src/components/ui/button";
 import { Badge } from "../../../../src/components/ui/badge";
 import {
   Card,
   CardContent,
-  CardDescription,
-  // CardFooter,
+  CardDescription, // Uncommented
+  // CardFooter, // Not used in user's provided code for main card
   CardHeader,
   CardTitle,
 } from "../../../../src/components/ui/card";
 import { Separator } from "../../../../src/components/ui/separator";
-// import { AspectRatio } from "../../../../src/components/ui/aspect-ratio";
+// import { AspectRatio } from "../../../../src/components/ui/aspect-ratio"; // Commented out in user code
 import {
   Alert,
   AlertDescription,
   AlertTitle,
 } from "../../../../src/components/ui/alert"; // For tracking info
-import { Truck, CheckCircle, XCircle } from "lucide-react"; // Icons
+// Adjusted icons based on user's code (Clock, Package, Info were not in user code)
+import { Truck, CheckCircle, XCircle } from "lucide-react";
 
 // Helper function to format date nicely (can be moved to utils)
 const formatDate = (
@@ -55,11 +57,11 @@ const getStatusVariant = (
 ): "default" | "secondary" | "destructive" | "outline" => {
   switch (status) {
     case "Processing":
+    case "Delayed": // Assuming Delayed uses secondary as well
       return "secondary";
     case "Shipped":
-      return "default";
     case "Delivered":
-      return "default"; // Consider a success variant if added
+      return "default";
     case "Cancelled":
       return "destructive";
     default:
@@ -71,6 +73,8 @@ const getStatusColorClasses = (status: string): string => {
   switch (status) {
     case "Processing":
       return "border-transparent bg-yellow-100 text-yellow-800 hover:bg-yellow-100/80 dark:bg-yellow-900/20 dark:text-yellow-400";
+    case "Delayed": // Added style for Delayed
+      return "border-transparent bg-orange-100 text-orange-800 hover:bg-orange-100/80 dark:bg-orange-900/20 dark:text-orange-400";
     case "Shipped":
       return "border-transparent bg-blue-100 text-blue-800 hover:bg-blue-100/80 dark:bg-blue-900/20 dark:text-blue-400";
     case "Delivered":
@@ -96,16 +100,14 @@ export default function OrderDetailPage() {
     } else {
       setOrder(null); // Invalid ID
     }
-    // Re-fetch order data if the order object itself changes (e.g., after status update)
-    // This might cause an infinite loop if getOrderById isn't stable or if update immediately triggers re-render
-    // A better approach in real app: trigger refetch manually or rely on context update propagation
-  }, [orderId, getOrderById, order]); // Added order dependency cautiously
+    // Consider removing 'order' from dependency array if causing issues,
+    // rely on context updates triggering re-render or manually trigger refetch.
+  }, [orderId, getOrderById, order]);
 
   const handleSimulateUpdate = (newStatus: OrderStatus) => {
     if (order) {
       updateOrderStatus(order.id, newStatus);
-      // Force re-fetch/re-render by getting the updated order
-      // Note: Directly setting state might be better if context updates reliably
+      // Re-fetch immediately to update UI state
       const updatedOrder = getOrderById(order.id);
       setOrder(updatedOrder);
     }
@@ -129,6 +131,7 @@ export default function OrderDetailPage() {
             <CardTitle className="text-2xl font-bold text-destructive">
               Order Not Found
             </CardTitle>
+            {/* Use CardDescription if imported */}
             <CardDescription className="text-muted-foreground pt-2">
               Could not find details for order ID: {orderId || "N/A"}.
             </CardDescription>
@@ -153,8 +156,6 @@ export default function OrderDetailPage() {
       </div>
 
       <Card className="overflow-hidden">
-        {" "}
-        {/* Use Card as main container */}
         <CardHeader className="bg-muted/30 p-4 sm:p-6">
           {/* Order Header */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
@@ -162,6 +163,7 @@ export default function OrderDetailPage() {
               <CardTitle className="text-2xl sm:text-3xl">
                 Order Details
               </CardTitle>
+              {/* Use CardDescription if imported */}
               <CardDescription className="text-sm text-muted-foreground mt-1">
                 Order #{order.id} <span className="mx-1">&bull;</span> Placed
                 on: {formatDate(order.orderDate, true)}
@@ -176,14 +178,29 @@ export default function OrderDetailPage() {
           </div>
         </CardHeader>
         <CardContent className="p-4 sm:p-6 space-y-6">
-          {/* Tracking Information */}
+          {/* Tracking/Status Information Alerts */}
+          {order.status === "Delayed" && ( // Added Delayed Alert
+            <Alert
+              variant="default"
+              className="bg-orange-50 border-orange-200 text-orange-800 dark:bg-orange-900/30 dark:border-orange-700 dark:text-orange-300"
+            >
+              {/* <Clock className="h-4 w-4 !text-orange-600 dark:!text-orange-400" /> Icon was missing in user code */}
+              <AlertTitle className="font-semibold">Order Delayed</AlertTitle>
+              <AlertDescription className="text-xs sm:text-sm">
+                There is a delay with your order.
+                {order.estimatedDelivery &&
+                  ` New estimated delivery: ${formatDate(
+                    order.estimatedDelivery
+                  )}.`}
+              </AlertDescription>
+            </Alert>
+          )}
           {order.status === "Shipped" && order.trackingNumber && (
             <Alert
               variant="default"
               className="bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-900/30 dark:border-blue-700 dark:text-blue-300"
             >
-              <Truck className="h-4 w-4 !text-blue-600 dark:!text-blue-400" />{" "}
-              {/* Force color if needed */}
+              <Truck className="h-4 w-4 !text-blue-600 dark:!text-blue-400" />
               <AlertTitle className="font-semibold">
                 Tracking Information
               </AlertTitle>
@@ -331,6 +348,19 @@ export default function OrderDetailPage() {
               -- Simulation Controls --
             </h3>
             <div className="flex flex-wrap justify-center gap-3">
+              {/* Added back Simulate Delay button */}
+              {(order.status === "Processing" ||
+                order.status === "Shipped") && (
+                <Button
+                  onClick={() => handleSimulateUpdate("Delayed")}
+                  size="sm"
+                  variant="outline"
+                  className="border-orange-500 text-orange-600 hover:bg-orange-50 cursor-pointer"
+                >
+                  {" "}
+                  Simulate Delay{" "}
+                </Button>
+              )}
               {order.status === "Processing" && (
                 <Button
                   onClick={() => handleSimulateUpdate("Shipped")}
@@ -338,31 +368,31 @@ export default function OrderDetailPage() {
                   variant="outline"
                   className="cursor-pointer"
                 >
-                  {" "}
-                  Simulate Ship{" "}
+                  Simulate Ship
                 </Button>
               )}
-              {order.status === "Shipped" && (
+              {/* Allow Deliver from Shipped OR Delayed */}
+              {(order.status === "Shipped" || order.status === "Delayed") && (
                 <Button
                   onClick={() => handleSimulateUpdate("Delivered")}
                   size="sm"
                   variant="outline"
                   className="cursor-pointer"
                 >
-                  {" "}
-                  Simulate Deliver{" "}
+                  Simulate Deliver
                 </Button>
               )}
+              {/* Allow Cancel from Processing, Shipped, or Delayed */}
               {(order.status === "Processing" ||
-                order.status === "Shipped") && (
+                order.status === "Shipped" ||
+                order.status === "Delayed") && (
                 <Button
                   onClick={() => handleSimulateUpdate("Cancelled")}
                   size="sm"
                   variant="destructive"
                   className="cursor-pointer"
                 >
-                  {" "}
-                  Simulate Cancel{" "}
+                  Simulate Cancel
                 </Button>
               )}
               {(order.status === "Delivered" ||

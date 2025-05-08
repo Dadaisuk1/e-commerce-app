@@ -120,43 +120,57 @@ export const OrderProvider: React.FC<OrderProviderProps> = ({ children }) => {
   // Function to simulate updating order status
   const updateOrderStatus = useCallback(
     (orderId: string, newStatus: OrderStatus) => {
-      let notificationMessage = ""; // Variable to hold the notification message
+      let notificationMessage = "";
 
       setOrders((prevOrders) =>
         prevOrders.map((order) => {
           if (order.id === orderId && order.status !== newStatus) {
-            // Only update if status actually changes
             console.log(`Updating order ${orderId} status to ${newStatus}`);
             const updatedOrder = { ...order, status: newStatus };
 
-            // Set notification message based on new status
-            notificationMessage = `Order #${
-              orderId.split("-")[1]
-            } status updated to ${newStatus}.`;
-
+            // Status-based logic
             if (newStatus === "Shipped") {
               updatedOrder.trackingNumber = `TN${Date.now()}`;
               const deliveryDate = new Date();
               deliveryDate.setDate(deliveryDate.getDate() + 5);
               updatedOrder.estimatedDelivery = deliveryDate;
+              notificationMessage = `Order #${
+                orderId.split("-")[1]
+              } has been shipped.`;
             } else if (newStatus === "Delivered") {
               if (!updatedOrder.estimatedDelivery) {
                 updatedOrder.estimatedDelivery = new Date();
               }
+              notificationMessage = `Order #${
+                orderId.split("-")[1]
+              } was delivered.`;
+            } else if (newStatus === "Delayed") {
+              if (updatedOrder.estimatedDelivery) {
+                const delayedDate = new Date(updatedOrder.estimatedDelivery);
+                delayedDate.setDate(delayedDate.getDate() + 3);
+                updatedOrder.estimatedDelivery = delayedDate;
+              }
+              notificationMessage = `Order #${
+                orderId.split("-")[1]
+              } has been delayed.`;
+            } else {
+              notificationMessage = `Order #${
+                orderId.split("-")[1]
+              } status updated to ${newStatus}.`;
             }
+
             return updatedOrder;
           }
           return order;
         })
       );
 
-      // Add the notification outside the map function if a message was set
       if (notificationMessage) {
         addNotification(notificationMessage);
       }
     },
     [addNotification]
-  ); // Add addNotification dependency
+  );
 
   // Function to mark all notifications as read
   const markNotificationsRead = useCallback(() => {
